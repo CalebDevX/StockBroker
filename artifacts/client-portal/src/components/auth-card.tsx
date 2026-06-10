@@ -1,40 +1,56 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useLocation } from 'wouter'
-import { Eye, EyeOff, AlertCircle, User, Mail, Phone, Lock } from 'lucide-react'
+import { Eye, EyeOff, AlertCircle, User, Mail, Lock, ShieldCheck, RotateCcw } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { authApi } from '@/lib/api'
+import PhoneInput, { COUNTRIES, buildFullPhone, isValidPhone, type Country } from './phone-input'
 
 const inp = 'w-full px-4 py-4 bg-background border border-border rounded-xl text-foreground placeholder-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-base'
 const lbl = 'block text-sm font-medium text-foreground mb-2'
 
 function isEmail(v: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) }
-function isPhone(v: string) { return /^0[789][01]\d{8}$/.test(v.replace(/\s/g, '')) }
+
+const DEFAULT_COUNTRY = COUNTRIES[0]
 
 export default function AuthCard() {
   const [, navigate] = useLocation()
   const { login, register } = useAuth()
   const [tab, setTab] = useState<'login' | 'register'>('login')
 
-  // Login
   const [loginEmail, setLoginEmail] = useState('')
   const [loginPw,    setLoginPw]    = useState('')
   const [showLoginPw, setShowLoginPw] = useState(false)
 
-  // Register
   const [fullName,  setFullName]  = useState('')
   const [email,     setEmail]     = useState('')
-  const [phone,     setPhone]     = useState('')
+  const [dialCode,  setDialCode]  = useState(DEFAULT_COUNTRY.dial)
+  const [selectedCountry, setSelectedCountry] = useState<Country>(DEFAULT_COUNTRY)
+  const [localPhone, setLocalPhone] = useState('')
   const [password,  setPassword]  = useState('')
   const [showPw,    setShowPw]    = useState(false)
 
-  const loginPwRef = useRef<HTMLInputElement>(null)
+  const [otpStep,      setOtpStep]      = useState(false)
+  const [otpRequestId, setOtpRequestId] = useState('')
+  const [otpCode,      setOtpCode]      = useState('')
+  const [otpLoading,   setOtpLoading]   = useState(false)
+  const [otpError,     setOtpError]     = useState('')
+  const [otpExpiry,    setOtpExpiry]    = useState<Date | null>(null)
+  const [otpCountdown, setOtpCountdown] = useState(0)
 
+  const loginPwRef = useRef<HTMLInputElement>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [apiError,  setApiError]  = useState('')
 
+  useEffect(() => {
+    if (otpCountdown <= 0) return
+    const t = setInterval(() => setOtpCountdown(v => Math.max(0, v - 1)), 1000)
+    return () => clearInterval(t)
+  }, [otpCountdown])
+
   function resetForm(t: 'login' | 'register') {
-    setTab(t); setApiError('')
-    setFullName(''); setEmail(''); setPhone(''); setPassword('')
+    setTab(t); setApiError(''); setOtpStep(false); setOtpCode(''); setOtpError('')
+    setFullName(''); setEmail(''); setLocalPhone(''); setPassword('')
+    setDialCode(DEFAULT_COUNTRY.dial); setSelectedCountry(DEFAULT_COUNTRY)
     setLoginEmail(''); setLoginPw('')
   }
 
@@ -57,15 +73,51 @@ export default function AuthCard() {
       setApiError('Please enter your full name (first and last)'); return
     }
     if (!isEmail(email)) { setApiError('Enter a valid email address'); return }
-    if (!isPhone(phone)) { setApiError('Enter a valid Nigerian phone number'); return }
+    if (!isValidPhone(dialCode, localPhone)) {
+      setApiError('Enter a valid phone number'); return
+    }
     if (password.length < 8) { setApiError('Password must be at least 8 characters'); return }
+
+    const fullPhone = buildFullPhone(dialCode, localPhone)
     setIsLoading(true)
     try {
-      await register({ email, password, fullName: fullName.trim(), phone: phone.replace(/\s/g, '') })
-      navigate('/dashboard')
+      const result = await authApi.sendPhoneOtp(fullPhone)
+      setOtpRequestId(result.requestId)
+      setOtpExpiry(new Date(result.expiresAt))
+      setOtpCountdown(600)
+      setOtpStep(true)
     } catch (err) {
       setApiError((err as Error).message)
     } finally { setIsLoading(false) }
+  }
+
+  async function handleOtpVerify(e: React.FormEvent) {
+    e.preventDefault()
+    if (otpCode.length < 4) { setOtpError('Enter the code sent to your phone'); return }
+    setOtpLoading(true); setOtpError('')
+    try {
+      await authApi.verifyPhoneOtp(otpRequestId, otpCode)
+      const fullPhone = buildFullPhone(dialCode, localPhone)
+      await register({ email, password, fullName: fullName.trim(), phone: fullPhone })
+      navigate('/dashboard')
+    } catch (err) {
+      setOtpError((err as Error).message)
+    } finally { setOtpLoading(false) }
+  }
+
+  async function resendOtp() {
+    if (otpCountdown > 0) return
+    const fullPhone = buildFullPhone(dialCode, localPhone)
+    setOtpLoading(true); setOtpError('')
+    try {
+      const result = await authApi.sendPhoneOtp(fullPhone)
+      setOtpRequestId(result.requestId)
+      setOtpExpiry(new Date(result.expiresAt))
+      setOtpCountdown(600)
+      setOtpCode('')
+    } catch (err) {
+      setOtpError((err as Error).message)
+    } finally { setOtpLoading(false) }
   }
 
   const pwStrength = (() => {
@@ -82,6 +134,9 @@ export default function AuthCard() {
     return              { label: 'Strong', color: 'bg-emerald-500', w: '100%' }
   })()
 
+  const countdown = `${Math.floor(otpCountdown / 60)}:${String(otpCountdown % 60).padStart(2, '0')}`
+  const fullPhone  = buildFullPhone(dialCode, localPhone)
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4 bg-background">
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
@@ -94,7 +149,6 @@ export default function AuthCard() {
       </div>
 
       <div className="w-full max-w-sm z-10 py-6">
-        {/* Logo */}
         <div className="flex items-center gap-2.5 mb-8">
           <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
             <span className="text-primary-foreground font-black text-sm">SB</span>
@@ -105,7 +159,6 @@ export default function AuthCard() {
           </div>
         </div>
 
-        {/* Tab switcher */}
         <div className="flex gap-1 mb-6 bg-card p-1 rounded-xl border border-border">
           {(['login', 'register'] as const).map(t => (
             <button key={t} onClick={() => resetForm(t)}
@@ -117,15 +170,13 @@ export default function AuthCard() {
           ))}
         </div>
 
-        {/* Error banner */}
-        {apiError && (
+        {apiError && !otpStep && (
           <div className="mb-4 flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-xl p-3">
             <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
             <p className="text-red-400 text-sm">{apiError}</p>
           </div>
         )}
 
-        {/* ── LOGIN ── */}
         {tab === 'login' && (
           <form onSubmit={handleLogin} className="space-y-4 animate-in fade-in-50 duration-200">
             <div>
@@ -141,8 +192,7 @@ export default function AuthCard() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="text-sm font-medium text-foreground">Password</label>
-                <a href="/forgot-password"
-                  className="text-xs text-muted-foreground hover:text-accent transition-colors">
+                <a href="/forgot-password" className="text-xs text-muted-foreground hover:text-accent transition-colors">
                   Forgot password?
                 </a>
               </div>
@@ -167,14 +217,11 @@ export default function AuthCard() {
                 : 'Sign In'
               }
             </button>
-
           </form>
         )}
 
-        {/* ── REGISTER ── */}
-        {tab === 'register' && (
+        {tab === 'register' && !otpStep && (
           <form onSubmit={handleRegister} className="space-y-4 animate-in fade-in-50 duration-200">
-            {/* Full Name */ }
             <div>
               <label className={lbl}>Full Name <span className="text-red-400">*</span></label>
               <div className="relative">
@@ -185,7 +232,6 @@ export default function AuthCard() {
               </div>
             </div>
 
-            {/* Email */}
             <div>
               <label className={lbl}>Email Address <span className="text-red-400">*</span></label>
               <div className="relative">
@@ -199,21 +245,25 @@ export default function AuthCard() {
               )}
             </div>
 
-            {/* Phone */}
             <div>
               <label className={lbl}>Phone Number <span className="text-red-400">*</span></label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium select-none">🇳🇬</span>
-                <input type="tel" placeholder="0801 234 5678"
-                  value={phone} onChange={e => setPhone(e.target.value)}
-                  className={inp + ' pl-10'} inputMode="tel" autoComplete="tel" />
-              </div>
-              {phone && !isPhone(phone) && (
-                <p className="text-red-400 text-xs mt-1">Use format: 0801 234 5678</p>
+              <PhoneInput
+                localValue={localPhone}
+                dialCode={dialCode}
+                onLocalChange={setLocalPhone}
+                onCountryChange={(c) => { setSelectedCountry(c); setDialCode(c.dial) }}
+                error={!!(localPhone && !isValidPhone(dialCode, localPhone))}
+              />
+              {localPhone && !isValidPhone(dialCode, localPhone) && (
+                <p className="text-red-400 text-xs mt-1">
+                  {dialCode === '+234' ? 'Use format: 0801 234 5678' : 'Enter a valid phone number'}
+                </p>
               )}
+              <p className="text-xs text-muted-foreground mt-1">
+                A verification code will be sent to this number
+              </p>
             </div>
 
-            {/* Password */}
             <div>
               <label className={lbl}>Password <span className="text-red-400">*</span></label>
               <div className="relative">
@@ -242,7 +292,7 @@ export default function AuthCard() {
               {isLoading
                 ? <span className="flex items-center justify-center gap-2">
                     <span className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-                    Creating account…
+                    Sending code…
                   </span>
                 : 'Create My Account'
               }
@@ -253,6 +303,65 @@ export default function AuthCard() {
               <a href="/terms" className="text-accent hover:underline">Terms of Service</a> and{' '}
               <a href="/privacy" className="text-accent hover:underline">Privacy Policy</a>
             </p>
+          </form>
+        )}
+
+        {tab === 'register' && otpStep && (
+          <form onSubmit={handleOtpVerify} className="space-y-5 animate-in fade-in-50 duration-200">
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 mb-4">
+                <ShieldCheck className="w-7 h-7 text-primary" />
+              </div>
+              <h2 className="text-lg font-bold text-foreground">Verify your number</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                We sent a 6-digit code to{' '}
+                <span className="font-semibold text-foreground">{fullPhone}</span>
+              </p>
+            </div>
+
+            {otpError && (
+              <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-xl p-3">
+                <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                <p className="text-red-400 text-sm">{otpError}</p>
+              </div>
+            )}
+
+            <div>
+              <label className={lbl}>Verification Code</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={8}
+                placeholder="123456"
+                value={otpCode}
+                onChange={e => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                className={inp + ' text-center text-2xl font-bold tracking-[0.4em]'}
+                autoFocus
+              />
+            </div>
+
+            <button type="submit" disabled={otpLoading || otpCode.length < 4}
+              className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl transition-all hover:bg-primary/90 active:scale-[0.98] text-base shadow-lg shadow-primary/20 disabled:opacity-60">
+              {otpLoading
+                ? <span className="flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                    Verifying…
+                  </span>
+                : 'Verify & Create Account'
+              }
+            </button>
+
+            <div className="flex items-center justify-between text-sm">
+              <button type="button" onClick={() => { setOtpStep(false); setOtpCode(''); setOtpError('') }}
+                className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
+                ← Back
+              </button>
+              <button type="button" onClick={resendOtp} disabled={otpCountdown > 0 || otpLoading}
+                className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                <RotateCcw className="w-3.5 h-3.5" />
+                {otpCountdown > 0 ? `Resend in ${countdown}` : 'Resend code'}
+              </button>
+            </div>
           </form>
         )}
       </div>

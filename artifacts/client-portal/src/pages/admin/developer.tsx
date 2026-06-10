@@ -20,6 +20,8 @@ interface DevKeys {
   smtp_user?: string
   smtp_pass?: string
   smtp_secure?: string
+  smtp_from?: string
+  smtp_from_name?: string
   cscs_api_url?: string
   cscs_api_key?: string
   cscs_broker_code?: string
@@ -283,6 +285,52 @@ export default function AdminDeveloper() {
               onChange={set('smtp_pass')}
               placeholder="smtp password or API key"
             />
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase">Connection Security</label>
+              <div className="mt-1.5 flex gap-2">
+                {[
+                  { val: 'false', label: 'STARTTLS', hint: 'Port 587' },
+                  { val: 'true',  label: 'SSL / TLS', hint: 'Port 465' },
+                ].map(opt => (
+                  <button
+                    key={opt.val}
+                    type="button"
+                    onClick={() => set('smtp_secure')(opt.val)}
+                    className={`flex-1 py-2 px-3 rounded-lg border text-xs font-medium transition-all ${
+                      (form.smtp_secure ?? 'false') === opt.val
+                        ? 'bg-primary/10 border-primary text-primary'
+                        : 'border-border text-muted-foreground hover:border-primary/50'
+                    }`}
+                  >
+                    <span className="font-semibold">{opt.label}</span>
+                    <span className="text-[10px] block opacity-70">{opt.hint}</span>
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] text-muted-foreground/70 mt-1">STARTTLS (587) is recommended for most providers including Brevo.</p>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase">From Email Address</label>
+              <input
+                type="email"
+                value={form.smtp_from ?? ''}
+                onChange={(e) => set('smtp_from')(e.target.value)}
+                placeholder="noreply@yourbrokerage.com"
+                className="mt-1.5 w-full px-3 py-2 text-xs rounded-lg border border-border bg-background text-foreground placeholder-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+              <p className="text-[10px] text-muted-foreground/70 mt-1">The address system emails are sent from. Must be verified with your SMTP provider.</p>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase">From Display Name</label>
+              <input
+                type="text"
+                value={form.smtp_from_name ?? ''}
+                onChange={(e) => set('smtp_from_name')(e.target.value)}
+                placeholder="StockBroker NG"
+                className="mt-1.5 w-full px-3 py-2 text-xs rounded-lg border border-border bg-background text-foreground placeholder-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+              <p className="text-[10px] text-muted-foreground/70 mt-1">Display name shown in the email client, e.g. "Capital Trust Securities".</p>
+            </div>
           </Section>
 
           <Section

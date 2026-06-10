@@ -14,6 +14,7 @@ import {
   resetPasswordWithOtp,
   loginDemo,
 } from "../services/auth-service.js";
+import { sendOtp, verifyOtp } from "../services/otp-service.js";
 
 const router = Router();
 
@@ -21,7 +22,7 @@ const registerSchema = z.object({
   email:    z.string().email(),
   password: z.string().min(8, "Password must be at least 8 characters"),
   fullName: z.string().min(2).max(120),
-  phone:    z.string().min(11).max(14),
+  phone:    z.string().min(10).max(20),
 });
 
 const loginSchema = z.object({
@@ -145,6 +146,40 @@ router.post("/otp/verify",
       const { requestId, code, newPassword } = req.body as { requestId: string; code: string; newPassword: string };
       await resetPasswordWithOtp(requestId, code, newPassword);
       res.json({ reset: true });
+    } catch (err: unknown) {
+      const e = err as Error & { status?: number };
+      res.status(e.status ?? 400).json({ error: e.message });
+    }
+  }
+);
+
+// POST /api/auth/phone/send-otp  — send OTP for phone verification during registration
+router.post("/phone/send-otp",
+  validateBody(z.object({ phone: z.string().min(10).max(20) })),
+  async (req, res) => {
+    try {
+      const { phone } = req.body as { phone: string };
+      const result = await sendOtp(phone, "phone_verification");
+      res.json({ sent: true, requestId: result.requestId, expiresAt: result.expiresAt });
+    } catch (err: unknown) {
+      const e = err as Error & { status?: number };
+      res.status(e.status ?? 400).json({ error: e.message });
+    }
+  }
+);
+
+// POST /api/auth/phone/verify  — verify OTP code
+router.post("/phone/verify",
+  validateBody(z.object({ requestId: z.string().min(1), code: z.string().min(4).max(8) })),
+  async (req, res) => {
+    try {
+      const { requestId, code } = req.body as { requestId: string; code: string };
+      const valid = await verifyOtp(requestId, code);
+      if (!valid) {
+        res.status(400).json({ error: "Invalid or expired verification code" });
+        return;
+      }
+      res.json({ verified: true });
     } catch (err: unknown) {
       const e = err as Error & { status?: number };
       res.status(e.status ?? 400).json({ error: e.message });

@@ -105,6 +105,14 @@ export const authApi = {
     apiFetch<{ reset: boolean }>('/auth/reset-password', {
       method: 'POST', body: JSON.stringify({ token, newPassword }),
     }),
+  sendPhoneOtp: (phone: string) =>
+    apiFetch<{ sent: boolean; requestId: string; expiresAt: string }>('/auth/phone/send-otp', {
+      method: 'POST', body: JSON.stringify({ phone }),
+    }),
+  verifyPhoneOtp: (requestId: string, code: string) =>
+    apiFetch<{ verified: boolean }>('/auth/phone/verify', {
+      method: 'POST', body: JSON.stringify({ requestId, code }),
+    }),
 }
 
 // ─── Portfolio ────────────────────────────────────────────────────────

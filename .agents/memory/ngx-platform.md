@@ -21,7 +21,11 @@ description: Monorepo layout, build/restart pattern, schema facts, and productio
 - CSCS/FIX integration stubs present but `FIX_HOST` not set → demo mode auto-activates on startup.
 - Support chat: `support_chats` + `support_messages` tables. Bot reply is synchronous (returned in same POST). Gemini key: env `GEMINI_API_KEY` first, then settings table `dev_api_keys.gemini_api_key`. Admin inbox polls every 4s (React Query refetchInterval). `SupportChatWidget` renders in App.tsx for all authenticated non-admin users.
 - Developer Panel at `/admin/developer` saves all API keys under settings key `dev_api_keys` (JSONB). Services check env first, then `dev_api_keys` setting. Admin only.
-- Role management: fully built in `admin/client-detail.tsx` — Role dropdown + Change Role button visible in the client detail page.
+- Role management: fully built in `admin/client-detail.tsx` — Role dropdown + Change Role button visible in the client detail page. Valid roles: client/broker/compliance/admin only — no "developer" role exists.
 - `ClientSupportWidget` in App.tsx wraps `SupportChatWidget` (hides for admin/broker/compliance roles via widget-internal guard).
+- Phone input: custom `PhoneInput` component at `src/components/phone-input.tsx` — 46 countries, flag + dial code dropdown with search, exports `buildFullPhone()` and `isValidPhone()` helpers. Default country Nigeria (+234).
+- Registration OTP flow: auth-card → `POST /api/auth/phone/send-otp` → OTP modal → `POST /api/auth/phone/verify` → register. Backend register schema accepts `phone: min(10).max(20)` for E.164 format.
+- Developer panel SMTP section now has `smtp_secure` toggle (STARTTLS/SSL), `smtp_from` email, and `smtp_from_name` display name. All stored under `dev_api_keys` JSONB in settings.
+- KYC page layout: uses correct `md:pl-56 flex flex-col min-h-screen` pattern (not `md:ml-56`).
 
 **Why:** Backend requires explicit rebuild because it's compiled TypeScript (esbuild). Frontend is Vite HMR. Forgetting to rebuild causes the old bundle to serve stale routes even after code edits.

@@ -96,7 +96,7 @@ export default function KycPage() {
   return (
     <div className="bg-background min-h-screen overflow-x-hidden">
       <DashboardSidebar />
-      <main className="flex-1 md:ml-56 p-4 md:p-8 pb-24 md:pb-8 flex flex-col items-center justify-center">
+      <main className="md:pl-56 flex flex-col min-h-screen p-4 md:p-8 pb-24 md:pb-8 items-center justify-center">
         <div className="w-full max-w-lg">
 
           {/* Header */}
