@@ -4,11 +4,9 @@ import { Home, BarChart2, Layers, List, Bell, MoreHorizontal } from 'lucide-reac
 import useMobileNav from './useMobileNav'
 
 const NavItem = ({ to, label, icon }: { to: string; label: string; icon: React.ReactNode }) => (
-  <Link href={to} className="flex-1">
-    <a className="w-full flex flex-col items-center justify-center py-2 text-xs text-muted-foreground">
-      <div className="h-6 w-6">{icon}</div>
-      <span className="mt-1">{label}</span>
-    </a>
+  <Link href={to} className="flex-1 w-full flex flex-col items-center justify-center py-2 text-xs text-muted-foreground">
+    <div className="h-6 w-6">{icon}</div>
+    <span className="mt-1">{label}</span>
   </Link>
 )
 
