@@ -128,7 +128,7 @@ export default function PortfolioChart() {
             </defs>
             <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#848e9c' }} axisLine={false} tickLine={false} tickMargin={8} />
             <YAxis
-              tick={{ fontSize: 10, fill: '#848e9c' }} axisLine={false} tickLine={false} tickMargin={4} width={60}
+              tick={{ fontSize: 9, fill: '#848e9c' }} axisLine={false} tickLine={false} tickMargin={4} width={52}
               tickFormatter={(v) => v >= 1_000_000 ? `₦${(v / 1_000_000).toFixed(1)}M` : `₦${(v / 1000).toFixed(0)}k`}
             />
             <Tooltip content={<CustomTooltip />} />

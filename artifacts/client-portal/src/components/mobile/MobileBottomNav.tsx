@@ -2,11 +2,11 @@ import { Link, useLocation } from 'wouter'
 import { Home, TrendingUp, Briefcase, Bell, User } from 'lucide-react'
 
 const ITEMS = [
-  { label: 'Home',      icon: Home,        href: '/dashboard'     },
-  { label: 'Portfolio', icon: Briefcase,   href: '/portfolio'     },
-  { label: 'Trade',     icon: TrendingUp,  href: '/trade', primary: true },
-  { label: 'Alerts',    icon: Bell,        href: '/notifications' },
-  { label: 'Account',   icon: User,        href: '/settings'      },
+  { label: 'Home',      icon: Home,       href: '/dashboard'     },
+  { label: 'Portfolio', icon: Briefcase,  href: '/portfolio'     },
+  { label: 'Trade',     icon: TrendingUp, href: '/trade', primary: true },
+  { label: 'Alerts',   icon: Bell,       href: '/notifications' },
+  { label: 'Account',  icon: User,       href: '/settings'      },
 ]
 
 export default function MobileBottomNav() {
@@ -14,17 +14,22 @@ export default function MobileBottomNav() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 bg-[#0b0e11]/95 backdrop-blur-md border-t border-[#0ecb81]/10 z-40"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0b0e11]/95 backdrop-blur-md border-t border-[#0ecb81]/10"
       role="navigation"
       aria-label="Bottom navigation"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
-      <div className="flex items-end pb-safe">
+      <div className="flex h-16">
         {ITEMS.map(({ label, icon: Icon, href, primary }) => {
           const active = location === href || location.startsWith(href + '/')
           if (primary) {
             return (
-              <Link key={label} href={href} className="flex-1 flex flex-col items-center justify-center py-1.5">
-                <div className={`flex items-center justify-center w-12 h-10 rounded-2xl shadow-lg mb-0.5 transition-all ${
+              <Link
+                key={label}
+                href={href}
+                className="flex-1 flex flex-col items-center justify-center gap-0.5"
+              >
+                <div className={`flex items-center justify-center w-12 h-10 rounded-2xl shadow-lg transition-all ${
                   active
                     ? 'bg-[#0ecb81] shadow-[#0ecb81]/40'
                     : 'bg-[#0ecb81]/90 shadow-[#0ecb81]/20'
@@ -36,9 +41,13 @@ export default function MobileBottomNav() {
             )
           }
           return (
-            <Link key={label} href={href} className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-1 transition-colors ${
-              active ? 'text-[#0ecb81]' : 'text-muted-foreground'
-            }`}>
+            <Link
+              key={label}
+              href={href}
+              className={`flex-1 flex flex-col items-center justify-center gap-1 transition-colors ${
+                active ? 'text-[#0ecb81]' : 'text-muted-foreground'
+              }`}
+            >
               <Icon className="w-5 h-5" />
               <span className="text-[9px] font-semibold">{label}</span>
             </Link>

@@ -45,8 +45,8 @@ export default function HoldingsTable() {
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-border">
-                {['Symbol', 'Qty', 'Avg Cost', 'Last Price', 'Mkt Value', 'P&L'].map((h, i) => (
-                  <th key={h} className={`py-2.5 px-4 text-[9px] uppercase tracking-widest text-muted-foreground font-medium ${i > 0 ? 'text-right' : 'text-left'}`}>
+                {(['Symbol', 'Qty', 'Avg Cost', 'Last Price', 'Mkt Value', 'P&L'] as const).map((h, i) => (
+                  <th key={h} className={`py-2.5 px-4 text-[9px] uppercase tracking-widest text-muted-foreground font-medium ${i > 0 ? 'text-right' : 'text-left'} ${i === 2 || i === 4 ? 'hidden sm:table-cell' : ''}`}>
                     {h}
                   </th>
                 ))}
@@ -65,13 +65,13 @@ export default function HoldingsTable() {
                     )}
                   </td>
                   <td className="py-3 px-4 text-right font-mono text-foreground">{h.quantity.toLocaleString()}</td>
-                  <td className="py-3 px-4 text-right font-mono text-muted-foreground">
+                  <td className="py-3 px-4 text-right font-mono text-muted-foreground hidden sm:table-cell">
                     ₦{h.avgCostKobo ? (h.avgCostKobo / 100).toFixed(2) : '—'}
                   </td>
                   <td className="py-3 px-4 text-right font-mono text-foreground">
                     ₦{(h.marketValueKobo / h.quantity / 100).toFixed(2)}
                   </td>
-                  <td className="py-3 px-4 text-right font-mono text-foreground">
+                  <td className="py-3 px-4 text-right font-mono text-foreground hidden sm:table-cell">
                     ₦{(h.marketValueKobo / 100).toLocaleString('en-NG', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                   </td>
                   <td className="py-3 px-4 text-right">

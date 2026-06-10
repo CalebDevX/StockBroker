@@ -137,7 +137,7 @@ export default function TradePage() {
           {/* Mobile: single-panel view toggled by tab */}
           <div className="md:hidden">
             {mobileTab === 'search' && (
-              <div className="h-[calc(100dvh-240px)] min-h-[300px]">
+              <div className="h-[calc(100dvh-260px)] min-h-[300px]">
                 <InstrumentSearch
                   onSelect={handleSelect}
                   selectedSymbol={selectedInstrument?.symbol}
