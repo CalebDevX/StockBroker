@@ -452,6 +452,12 @@ export const adminApi = {
     apiFetch<{ ok: boolean }>('/admin/developer-keys', {
       method: 'PATCH', body: JSON.stringify({ keys }),
     }),
+
+  testEmail: () =>
+    apiFetch<{ ok: boolean; provider: string; to: string }>('/admin/test-email', { method: 'POST' }),
+
+  testSms: () =>
+    apiFetch<{ ok: boolean; provider: string; to: string }>('/admin/test-sms', { method: 'POST' }),
 }
 
 // ─── Support Chat ─────────────────────────────────────────────────────

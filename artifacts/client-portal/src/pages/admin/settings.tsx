@@ -4,6 +4,7 @@ import {
   Settings2, Mail, MessageSquare, ShieldCheck, CheckCircle2,
   AlertTriangle, Globe, Bell, FileText, Hash, Phone, Twitter,
   Instagram, Linkedin, Image, AtSign, Clock, RefreshCw, Save,
+  Send, Loader2,
 } from 'lucide-react'
 import AdminLayout from '@/components/admin-layout'
 import { adminApi } from '@/lib/api'
@@ -623,6 +624,9 @@ export default function AdminSettings() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-settings'] }),
   })
 
+  const testEmailMut = useMutation({ mutationFn: () => adminApi.testEmail() })
+  const testSmsMut   = useMutation({ mutationFn: () => adminApi.testSms() })
+
   const set = (k: keyof SF, v: string | boolean) =>
     setForm((f) => ({ ...f, [k]: v }))
 
@@ -850,6 +854,41 @@ export default function AdminSettings() {
                     </p>
                   </div>
                 )}
+
+                {/* Test send panel */}
+                <div className="rounded-xl border border-border bg-background/40 px-5 py-4">
+                  <div className="flex items-center justify-between gap-4 flex-wrap">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Test email delivery</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Sends a real test message to <strong>your admin account email</strong> using the current provider
+                        {form.emailProvider === 'console' ? ' (console — will only log to server)' : ` (${form.emailProvider})`}.
+                      </p>
+                      {testEmailMut.isSuccess && (
+                        <p className="text-xs text-emerald-400 mt-1.5 flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Sent to {testEmailMut.data?.to} via {testEmailMut.data?.provider}
+                        </p>
+                      )}
+                      {testEmailMut.isError && (
+                        <p className="text-xs text-rose-400 mt-1.5 flex items-center gap-1">
+                          <AlertTriangle className="w-3.5 h-3.5" />
+                          {(testEmailMut.error as Error).message}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { testEmailMut.reset(); testEmailMut.mutate() }}
+                      disabled={testEmailMut.isPending}
+                      className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors disabled:opacity-50"
+                    >
+                      {testEmailMut.isPending
+                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Sending…</>
+                        : <><Send className="w-3.5 h-3.5" /> Test send</>}
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -914,6 +953,41 @@ export default function AdminSettings() {
                     </p>
                   </div>
                 )}
+
+                {/* Test send panel */}
+                <div className="rounded-xl border border-border bg-background/40 px-5 py-4">
+                  <div className="flex items-center justify-between gap-4 flex-wrap">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Test SMS delivery</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Sends a real test SMS to <strong>your admin account phone number</strong> using the current provider
+                        {form.smsProvider === 'console' ? ' (console — will only log to server)' : ` (${form.smsProvider})`}.
+                      </p>
+                      {testSmsMut.isSuccess && (
+                        <p className="text-xs text-emerald-400 mt-1.5 flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Sent to {testSmsMut.data?.to} via {testSmsMut.data?.provider}
+                        </p>
+                      )}
+                      {testSmsMut.isError && (
+                        <p className="text-xs text-rose-400 mt-1.5 flex items-center gap-1">
+                          <AlertTriangle className="w-3.5 h-3.5" />
+                          {(testSmsMut.error as Error).message}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { testSmsMut.reset(); testSmsMut.mutate() }}
+                      disabled={testSmsMut.isPending}
+                      className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-colors disabled:opacity-50"
+                    >
+                      {testSmsMut.isPending
+                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Sending…</>
+                        : <><Send className="w-3.5 h-3.5" /> Test send</>}
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 

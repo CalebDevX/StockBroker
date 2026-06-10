@@ -5,7 +5,7 @@ import { validateBody, validateQuery } from "../middlewares/validate.js";
 import { db } from "@workspace/db";
 import { getMode, setMode, type TradingMode } from "../services/trading-mode.js";
 import { startFixSession, getFixSession } from "../services/fix-session.js";
-import { sendKycStatusNotification } from "../services/notification.js";
+import { sendKycStatusNotification, sendTestEmail, sendTestSms } from "../services/notification.js";
 import { createNotification } from "../services/notifications-service.js";
 import { logger } from "../lib/logger.js";
 import {
@@ -621,6 +621,48 @@ router.get("/mode", (_req, res) => {
   const mode = getMode();
   const sess = mode === "live" ? getFixSession() : null;
   res.json({ mode, fixConnected: sess?.isConnected ?? false, fixLoggedOn: sess?.isLoggedOn ?? false });
+});
+
+// ── Test send ────────────────────────────────────────────────────────────────
+
+router.post("/test-email", requireRole("admin"), async (req, res) => {
+  try {
+    const [admin] = await db
+      .select({ email: clientsTable.email })
+      .from(clientsTable)
+      .where(eq(clientsTable.id, req.auth.sub))
+      .limit(1);
+
+    if (!admin?.email) {
+      res.status(400).json({ error: "Could not resolve your email address." });
+      return;
+    }
+
+    const { provider } = await sendTestEmail(admin.email);
+    res.json({ ok: true, provider, to: admin.email });
+  } catch (err: unknown) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+router.post("/test-sms", requireRole("admin"), async (req, res) => {
+  try {
+    const [admin] = await db
+      .select({ phone: clientsTable.phone })
+      .from(clientsTable)
+      .where(eq(clientsTable.id, req.auth.sub))
+      .limit(1);
+
+    if (!admin?.phone) {
+      res.status(400).json({ error: "No phone number is set on your admin account." });
+      return;
+    }
+
+    const { provider } = await sendTestSms(admin.phone);
+    res.json({ ok: true, provider, to: admin.phone });
+  } catch (err: unknown) {
+    res.status(500).json({ error: (err as Error).message });
+  }
 });
 
 // ── Developer Keys ────────────────────────────────────────────────────────────

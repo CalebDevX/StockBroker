@@ -1,5 +1,8 @@
 import nodemailer from "nodemailer";
 import { listSettings } from "./settings-service.js";
+import { db } from "@workspace/db";
+import { settingsTable } from "@workspace/db/schema";
+import { eq } from "drizzle-orm";
 
 const DEFAULT_APP_URL = process.env["PUBLIC_URL"] ?? process.env["APP_URL"] ?? "https://app.stockbroker.ng";
 const DEFAULT_APP_NAME = process.env["APP_NAME"] ?? "StockBroker NG";
@@ -250,6 +253,103 @@ async function getEffectiveSettings(): Promise<EffectiveSettings> {
       ? (settings.email_provider as Record<string, unknown>).supportEmail ?? DEFAULT_SUPPORT_EMAIL
       : DEFAULT_SUPPORT_EMAIL),
   };
+}
+
+async function getDevApiKeys(): Promise<Record<string, string>> {
+  try {
+    const [row] = await db
+      .select({ value: settingsTable.value })
+      .from(settingsTable)
+      .where(eq(settingsTable.key, "dev_api_keys"))
+      .limit(1);
+    return (row?.value as Record<string, string>) ?? {};
+  } catch {
+    return {};
+  }
+}
+
+export async function sendTestEmail(toEmail: string): Promise<{ provider: string }> {
+  const { emailConfig, appName } = await getEffectiveSettings();
+  const devKeys = await getDevApiKeys();
+
+  const subject = `[Test] ${appName} — email delivery check`;
+  const body = `This is a test message from ${appName}.\n\nYour email provider (${emailConfig.provider}) is configured correctly.\n\nSent at: ${new Date().toUTCString()}`;
+
+  if (emailConfig.provider === "sendgrid") {
+    const apiKey = process.env["SENDGRID_API_KEY"] ?? devKeys["sendgrid_api_key"] ?? "";
+    if (!apiKey) throw new Error("SendGrid API key is not configured. Add it in the Developer panel.");
+    const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        personalizations: [{ to: [{ email: toEmail }] }],
+        from: { email: emailConfig.fromEmail },
+        subject,
+        content: [{ type: "text/plain", value: body }],
+      }),
+    });
+    if (!res.ok) {
+      const msg = await res.text().catch(() => "");
+      throw new Error(`SendGrid error: ${res.status} ${msg}`);
+    }
+  } else if (emailConfig.provider === "smtp") {
+    const host = process.env["SMTP_HOST"] ?? devKeys["smtp_host"] ?? "";
+    const port = Number(process.env["SMTP_PORT"] ?? devKeys["smtp_port"] ?? 587);
+    const secure = (process.env["SMTP_SECURE"] ?? devKeys["smtp_secure"]) === "true" || port === 465;
+    const user = process.env["SMTP_USER"] ?? devKeys["smtp_user"] ?? "";
+    const pass = process.env["SMTP_PASS"] ?? devKeys["smtp_pass"] ?? "";
+    if (!host || !user || !pass) throw new Error("SMTP credentials are not configured. Add SMTP_HOST, SMTP_USER, and SMTP_PASS in the Developer panel.");
+    const transporter = nodemailer.createTransport({ host, port, secure, auth: { user, pass } });
+    const result = await transporter.sendMail({ from: emailConfig.fromEmail, to: toEmail, subject, text: body });
+    if (!result.messageId) throw new Error("SMTP send failed — no message ID returned.");
+  } else {
+    console.info("[TEST EMAIL]", { to: toEmail, subject, provider: "console" });
+  }
+
+  return { provider: emailConfig.provider };
+}
+
+export async function sendTestSms(toPhone: string): Promise<{ provider: string }> {
+  const { smsConfig, appName } = await getEffectiveSettings();
+  const devKeys = await getDevApiKeys();
+
+  const message = `[Test] ${appName}: SMS delivery check successful. ${new Date().toUTCString()}`;
+
+  if (smsConfig.provider === "twilio") {
+    const accountSid = process.env["TWILIO_ACCOUNT_SID"] ?? devKeys["twilio_account_sid"] ?? "";
+    const authToken = process.env["TWILIO_AUTH_TOKEN"] ?? devKeys["twilio_auth_token"] ?? "";
+    if (!accountSid || !authToken) throw new Error("Twilio credentials are not configured. Add them in the Developer panel.");
+    const form = new URLSearchParams({ To: toPhone, From: smsConfig.fromNumber, Body: message });
+    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: form,
+    });
+    if (!res.ok) {
+      const msg = await res.text().catch(() => "");
+      throw new Error(`Twilio error: ${res.status} ${msg}`);
+    }
+  } else if (smsConfig.provider === "achek") {
+    const apiKey = process.env["ACHEK_API_KEY"] ?? devKeys["achek_api_key"] ?? "";
+    const endpoint = (process.env["ACHEK_API_URL"] ?? devKeys["achek_api_url"] ?? "https://api.achek.com.ng").replace(/\/$/, "");
+    if (!apiKey) throw new Error("Achek API key is not configured. Add it in the Developer panel.");
+    const res = await fetch(`${endpoint}/alerts/send`, {
+      method: "POST",
+      headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ phoneNumber: toPhone, message, senderNumberId: smsConfig.fromNumber }),
+    });
+    if (!res.ok) {
+      const msg = await res.text().catch(() => "");
+      throw new Error(`Achek error: ${res.status} ${msg}`);
+    }
+  } else {
+    console.info("[TEST SMS]", { to: toPhone, message, provider: "console" });
+  }
+
+  return { provider: smsConfig.provider };
 }
 
 export async function sendPasswordResetEmail(email: string, fullName: string, token: string) {
