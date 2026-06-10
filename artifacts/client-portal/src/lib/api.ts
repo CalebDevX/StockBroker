@@ -236,6 +236,14 @@ export interface Mover {
   changePct: number
 }
 
+export interface MarketSummary {
+  total: number
+  advancers: number
+  decliners: number
+  unchanged: number
+  totalVolume: number
+}
+
 export const marketApi = {
   // search requires q >= 2 chars, else returns []
   search: (q: string) =>
@@ -246,6 +254,7 @@ export const marketApi = {
   movers: () => apiFetch<{ gainers: Mover[]; losers: Mover[] }>('/market/movers'),
   quote: (symbol: string) =>
     apiFetch<InstrumentQuote>(`/market/quote/${symbol}`),
+  summary: () => apiFetch<MarketSummary>('/market/summary'),
 }
 
 // ─── Funds ────────────────────────────────────────────────────────────

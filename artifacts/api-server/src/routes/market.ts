@@ -108,6 +108,40 @@ router.get("/search", async (req, res) => {
   }
 });
 
+// GET /api/market/summary — advancers / decliners / unchanged + volume
+router.get("/summary", async (_req, res) => {
+  try {
+    const rows = await db
+      .select({
+        lastPriceKobo:      instrumentsTable.lastPriceKobo,
+        prevClosePriceKobo: instrumentsTable.prevClosePriceKobo,
+        volume:             instrumentsTable.volume,
+      })
+      .from(instrumentsTable)
+      .where(sql`${instrumentsTable.isActive} = true`);
+
+    let advancers = 0, decliners = 0, unchanged = 0, totalVolume = 0;
+    for (const r of rows) {
+      totalVolume += r.volume ?? 0;
+      if (r.prevClosePriceKobo <= 0) { unchanged++; continue; }
+      const diff = r.lastPriceKobo - r.prevClosePriceKobo;
+      if (diff > 0) advancers++;
+      else if (diff < 0) decliners++;
+      else unchanged++;
+    }
+
+    res.json({
+      total:       rows.length,
+      advancers,
+      decliners,
+      unchanged,
+      totalVolume,
+    });
+  } catch (err: unknown) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
 // GET /api/market/instruments
 router.get("/instruments", async (req, res) => {
   try {

@@ -5,6 +5,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import DashboardSidebar from '@/components/dashboard-sidebar'
 import MarketTicker from '@/components/market-ticker'
 import StatsBar from '@/components/stats-bar'
+import MarketSummary from '@/components/market-summary'
+import RecentActivity from '@/components/recent-activity'
 import PortfolioChart from '@/components/portfolio-chart'
 import HoldingsTable from '@/components/holdings-table'
 import MarketMovers from '@/components/market-movers'
@@ -75,14 +77,17 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* ── Stats bar (all 4 key metrics in one compact row) ── */}
+          {/* ── Stats bar ── */}
           <StatsBar />
+
+          {/* ── NGX market breadth ── */}
+          <MarketSummary />
 
           {/* ── KYC banner if unverified ── */}
           <KycBanner />
 
           {/* ── Main content grid ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-3">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-3">
             {/* Left column */}
             <div className="space-y-3 min-w-0">
               <PortfolioChart />
@@ -92,21 +97,24 @@ export default function DashboardPage() {
             {/* Right column */}
             <div className="space-y-3">
               <MarketMovers />
+              <RecentActivity />
 
-              {/* Quick links card */}
-              <div className="rounded-xl border border-border bg-card p-4">
-                <p className="text-xs uppercase tracking-widest text-muted-foreground font-medium mb-3">Quick access</p>
-                <div className="space-y-1.5">
+              {/* Quick links */}
+              <div className="rounded-xl border border-border bg-card p-3">
+                <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-medium mb-2 px-1">
+                  Quick access
+                </p>
+                <div className="space-y-0.5">
                   {[
-                    { label: 'Place an order',       href: '/trade',         icon: TrendingUp },
-                    { label: 'View portfolio',        href: '/portfolio',     icon: Wallet     },
-                    { label: 'Deposit / Withdraw',    href: '/funds',         icon: ArrowRight },
-                    { label: 'Download statement',    href: '/reports',       icon: FileText   },
+                    { label: 'Place an order',    href: '/trade',     icon: TrendingUp },
+                    { label: 'View portfolio',    href: '/portfolio', icon: Wallet     },
+                    { label: 'Deposit / Withdraw',href: '/funds',     icon: ArrowRight },
+                    { label: 'Statement',         href: '/reports',   icon: FileText   },
                   ].map(({ label, href, icon: Icon }) => (
                     <Link
                       key={href}
                       href={href}
-                      className="flex items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-sm text-foreground hover:bg-[#0ecb81]/5 hover:text-[#0ecb81] transition group"
+                      className="flex items-center justify-between gap-2 rounded-lg px-2 py-2 text-xs text-foreground hover:bg-[#0ecb81]/5 hover:text-[#0ecb81] transition group"
                     >
                       <span className="flex items-center gap-2">
                         <Icon className="w-3.5 h-3.5 text-muted-foreground group-hover:text-[#0ecb81] transition" />
