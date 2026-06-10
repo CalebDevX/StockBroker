@@ -234,17 +234,29 @@ async function main() {
     .limit(1);
 
   if (existingAdmin.length > 0) {
+    const updateData: Record<string, unknown> = {
+      role:            "admin",
+      kycStatus:       "verified",
+      kycTier:         "tier3",
+      cashBalanceKobo: 50_000_000_000, // ₦500,000,000 (operational float)
+      updatedAt:       new Date(),
+    };
+
+    if (process.env.ADMIN_PASSWORD) {
+      updateData.passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 12);
+    }
+
     await db
       .update(clientsTable)
-      .set({
-        role:              "admin",
-        kycStatus:         "verified",
-        kycTier:           "tier3",
-        cashBalanceKobo:   50_000_000_000, // ₦500,000,000 (operational float)
-        updatedAt:         new Date(),
-      })
+      .set(updateData)
       .where(eq(clientsTable.email, ADMIN_EMAIL));
+
     console.log(`   ✓ Existing account promoted to admin: ${ADMIN_EMAIL}`);
+    if (process.env.ADMIN_PASSWORD) {
+      console.log(`   ✓ Admin password updated for ${ADMIN_EMAIL}`);
+    } else {
+      console.log(`   ⚠️  Existing admin password left unchanged because ADMIN_PASSWORD was not explicitly set`);
+    }
   } else {
     const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 12);
     await db.insert(clientsTable).values({
