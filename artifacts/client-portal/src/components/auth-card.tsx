@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useLocation } from 'wouter'
-import { Eye, EyeOff, AlertCircle, User, Mail, Phone, Lock, PlayCircle } from 'lucide-react'
+import { Eye, EyeOff, AlertCircle, User, Mail, Phone, Lock } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { authApi } from '@/lib/api'
 
@@ -12,7 +12,7 @@ function isPhone(v: string) { return /^0[789][01]\d{8}$/.test(v.replace(/\s/g, '
 
 export default function AuthCard() {
   const [, navigate] = useLocation()
-  const { login, register, loginWithTokens } = useAuth()
+  const { login, register } = useAuth()
   const [tab, setTab] = useState<'login' | 'register'>('login')
 
   // Login
@@ -27,9 +27,10 @@ export default function AuthCard() {
   const [password,  setPassword]  = useState('')
   const [showPw,    setShowPw]    = useState(false)
 
-  const [isLoading,   setIsLoading]   = useState(false)
-  const [isDemoLoading, setIsDemoLoading] = useState(false)
-  const [apiError,    setApiError]    = useState('')
+  const loginPwRef = useRef<HTMLInputElement>(null)
+
+  const [isLoading, setIsLoading] = useState(false)
+  const [apiError,  setApiError]  = useState('')
 
   function resetForm(t: 'login' | 'register') {
     setTab(t); setApiError('')
@@ -65,17 +66,6 @@ export default function AuthCard() {
     } catch (err) {
       setApiError((err as Error).message)
     } finally { setIsLoading(false) }
-  }
-
-  async function handleDemo() {
-    setIsDemoLoading(true); setApiError('')
-    try {
-      const res = await authApi.demo()
-      loginWithTokens(res.accessToken, res.refreshToken, res.client)
-      navigate('/dashboard')
-    } catch (err) {
-      setApiError((err as Error).message)
-    } finally { setIsDemoLoading(false) }
   }
 
   const pwStrength = (() => {
@@ -144,6 +134,7 @@ export default function AuthCard() {
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input type="email" placeholder="you@example.com"
                   value={loginEmail} onChange={e => setLoginEmail(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); loginPwRef.current?.focus() } }}
                   className={inp + ' pl-11'} autoComplete="email" autoFocus />
               </div>
             </div>
@@ -157,7 +148,7 @@ export default function AuthCard() {
               </div>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input type={showLoginPw ? 'text' : 'password'} placeholder="••••••••"
+                <input ref={loginPwRef} type={showLoginPw ? 'text' : 'password'} placeholder="••••••••"
                   value={loginPw} onChange={e => setLoginPw(e.target.value)}
                   className={inp + ' pl-11 pr-12'} autoComplete="current-password" />
                 <button type="button" onClick={() => setShowLoginPw(v => !v)}
@@ -177,24 +168,6 @@ export default function AuthCard() {
               }
             </button>
 
-            {/* Try Demo divider */}
-            <div className="relative my-1">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center">
-                <span className="px-3 bg-background text-xs text-muted-foreground">or</span>
-              </div>
-            </div>
-
-            <button type="button" onClick={handleDemo} disabled={isDemoLoading}
-              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-primary/5 transition-all disabled:opacity-60">
-              {isDemoLoading
-                ? <span className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
-                : <PlayCircle className="w-4 h-4 text-primary" />
-              }
-              {isDemoLoading ? 'Loading demo…' : 'Explore Demo Platform'}
-            </button>
           </form>
         )}
 
