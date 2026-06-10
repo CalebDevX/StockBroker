@@ -57,6 +57,18 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+function AuthenticatedMobileUI() {
+  const { user, isLoading } = useAuth()
+  if (isLoading || !user) return null
+  return (
+    <>
+      <MobileBottomNav />
+      <TradeFAB />
+      <MoreDrawer />
+    </>
+  )
+}
+
 export default function App() {
   return (
     <WouterRouter base={import.meta.env.BASE_URL?.replace(/\/$/, '') ?? ''}>
@@ -137,9 +149,7 @@ export default function App() {
           <Redirect to="/" />
         </Route>
       </Switch>
-      <MobileBottomNav />
-      <TradeFAB />
-      <MoreDrawer />
+      <AuthenticatedMobileUI />
     </WouterRouter>
   )
 }
