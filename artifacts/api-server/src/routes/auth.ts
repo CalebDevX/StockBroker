@@ -13,10 +13,25 @@ import {
   sendPasswordResetOtp,
   resetPasswordWithOtp,
   loginDemo,
+  findOrCreateGoogleUser,
 } from "../services/auth-service.js";
 import { sendOtp, verifyOtp } from "../services/otp-service.js";
+import {
+  getGoogleCredentials,
+  buildGoogleAuthUrl,
+  exchangeCode,
+  fetchGoogleProfile,
+} from "../services/google-oauth-service.js";
 
 const router = Router();
+
+function getBaseUrl(req: import("express").Request): string {
+  const appUrl = process.env["APP_URL"] ?? process.env["PUBLIC_URL"];
+  if (appUrl) return appUrl.replace(/\/$/, "");
+  const proto = (req.get("x-forwarded-proto") ?? req.protocol ?? "https").split(",")[0].trim();
+  const host  = (req.get("x-forwarded-host")  ?? req.get("host") ?? "localhost").split(",")[0].trim();
+  return `${proto}://${host}`;
+}
 
 const registerSchema = z.object({
   email:    z.string().email(),
@@ -46,6 +61,55 @@ const kycSchema = z.object({
     lga:        z.string().min(2).max(100),
     postalCode: z.string().min(3).max(10),
   }),
+});
+
+// GET /api/auth/google — start Google OAuth flow
+router.get("/google", async (req, res) => {
+  try {
+    const { clientId } = await getGoogleCredentials();
+    if (!clientId) {
+      const base = getBaseUrl(req);
+      res.redirect(`${base}/auth/callback?error=${encodeURIComponent("Google Sign-In is not configured yet. Contact your administrator.")}`);
+      return;
+    }
+    const base        = getBaseUrl(req);
+    const redirectUri = `${base}/api/auth/google/callback`;
+    const state       = Math.random().toString(36).slice(2);
+    const url         = buildGoogleAuthUrl(clientId, redirectUri, state);
+    res.redirect(url);
+  } catch (err: unknown) {
+    const base = getBaseUrl(req);
+    res.redirect(`${base}/auth/callback?error=${encodeURIComponent((err as Error).message)}`);
+  }
+});
+
+// GET /api/auth/google/callback — handle Google redirect
+router.get("/google/callback", async (req, res) => {
+  const base = getBaseUrl(req);
+  try {
+    const { code, error: oauthError } = req.query as { code?: string; error?: string };
+    if (oauthError || !code) {
+      res.redirect(`${base}/auth/callback?error=${encodeURIComponent(oauthError ?? "Google sign-in was cancelled")}`);
+      return;
+    }
+
+    const { clientId, clientSecret } = await getGoogleCredentials();
+    if (!clientId || !clientSecret) {
+      res.redirect(`${base}/auth/callback?error=${encodeURIComponent("Google Sign-In is not configured")}`);
+      return;
+    }
+
+    const redirectUri = `${base}/api/auth/google/callback`;
+    const tokens      = await exchangeCode(code, clientId, clientSecret, redirectUri);
+    const profile     = await fetchGoogleProfile(tokens.access_token);
+    const result      = await findOrCreateGoogleUser(profile);
+
+    res.redirect(
+      `${base}/auth/callback?accessToken=${encodeURIComponent(result.accessToken)}&refreshToken=${encodeURIComponent(result.refreshToken)}`
+    );
+  } catch (err: unknown) {
+    res.redirect(`${base}/auth/callback?error=${encodeURIComponent((err as Error).message)}`);
+  }
 });
 
 // POST /api/auth/register

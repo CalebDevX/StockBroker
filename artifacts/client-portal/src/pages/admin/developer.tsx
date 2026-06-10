@@ -8,6 +8,8 @@ import AdminLayout from '@/components/admin-layout'
 import { adminApi } from '@/lib/api'
 
 interface DevKeys {
+  google_client_id?: string
+  google_client_secret?: string
   gemini_api_key?: string
   achek_api_key?: string
   achek_api_url?: string
@@ -134,6 +136,44 @@ export default function AdminDeveloper() {
         </div>
       ) : (
         <div className="space-y-6 max-w-4xl">
+
+          <Section
+            icon={Key}
+            title="Authentication — Google OAuth"
+            description="Lets users sign in or register using their Google account. Requires a Google Cloud project."
+          >
+            <KeyField
+              label="Client ID"
+              field="google_client_id"
+              value={form.google_client_id ?? ''}
+              show={show('google_client_id')}
+              onToggle={() => toggle('google_client_id')}
+              onChange={set('google_client_id')}
+              placeholder="xxxxxxxxxxxx-xxxx.apps.googleusercontent.com"
+              hint="From Google Cloud Console → APIs & Services → Credentials."
+            />
+            <KeyField
+              label="Client Secret"
+              field="google_client_secret"
+              value={form.google_client_secret ?? ''}
+              show={show('google_client_secret')}
+              onToggle={() => toggle('google_client_secret')}
+              onChange={set('google_client_secret')}
+              placeholder="GOCSPX-..."
+              hint="Keep this secret. Never expose it to the browser."
+            />
+            <div className="lg:col-span-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase mb-1.5">Authorized Redirect URI</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Register the following URI in your Google Cloud Console under{' '}
+                <strong className="text-foreground">OAuth 2.0 Client IDs → Authorized redirect URIs</strong>:
+              </p>
+              <code className="block mt-2 px-3 py-2 bg-background border border-border rounded-lg text-xs text-primary font-mono break-all select-all">
+                {typeof window !== 'undefined' ? `${window.location.origin}/api/auth/google/callback` : '/api/auth/google/callback'}
+              </code>
+            </div>
+          </Section>
+
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 flex items-start gap-2">
             <ShieldCheck className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
             <p className="text-xs text-amber-300 leading-relaxed">

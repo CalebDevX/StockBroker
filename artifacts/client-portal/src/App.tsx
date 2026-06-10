@@ -11,6 +11,7 @@ import HelpPage from '@/pages/help'
 import SettingsPage from '@/pages/settings'
 import KycPage from '@/pages/kyc'
 import ForgotPasswordPage from '@/pages/forgot-password'
+import AuthCallbackPage   from '@/pages/auth-callback'
 import TermsPage from '@/pages/terms'
 import PrivacyPage from '@/pages/privacy'
 import AdminOverview    from '@/pages/admin/index'
@@ -81,6 +82,7 @@ export default function App() {
           <GuestGuard><AuthCard /></GuestGuard>
         </Route>
         <Route path="/forgot-password"><ForgotPasswordPage /></Route>
+        <Route path="/auth/callback"><AuthCallbackPage /></Route>
         <Route path="/terms"><TermsPage /></Route>
         <Route path="/privacy"><PrivacyPage /></Route>
 

@@ -7,6 +7,7 @@ import { signToken, signRefreshToken } from "../middlewares/auth.js";
 import { isDemo } from "./trading-mode.js";
 import { sendPasswordResetEmail } from "./notification.js";
 import { sendOtp, verifyOtp } from "./otp-service.js";
+import type { GoogleProfile } from "./google-oauth-service.js";
 
 const SALT_ROUNDS = 12;
 
@@ -284,5 +285,61 @@ export async function resetPassword(token: string, newPassword: string): Promise
     .set({ passwordHash, updatedAt: new Date() })
     .where(eq(clientsTable.id, entry.clientId));
   resetTokens.delete(token);
+}
+
+// ── Google OAuth ──────────────────────────────────────────────────────────────
+
+export async function findOrCreateGoogleUser(
+  profile: GoogleProfile,
+): Promise<{ client: SafeClient; accessToken: string; refreshToken: string }> {
+  // Try to find existing account by email
+  const [existing] = await db
+    .select()
+    .from(clientsTable)
+    .where(eq(clientsTable.email, profile.email.toLowerCase()))
+    .limit(1);
+
+  if (existing) {
+    // Sign the existing user in directly — no password check for OAuth
+    const accessToken  = signToken({ sub: existing.id, role: existing.role });
+    const refreshToken = signRefreshToken(existing.id);
+    const refreshHash  = await bcrypt.hash(refreshToken, 10);
+    await db
+      .update(clientsTable)
+      .set({ refreshTokenHash: refreshHash, updatedAt: new Date() })
+      .where(eq(clientsTable.id, existing.id));
+    return { client: omitSensitive(existing), accessToken, refreshToken };
+  }
+
+  // Create a new account from the Google profile.
+  // Phone is set to a placeholder — the user can update it in Settings.
+  const id           = uuidv4();
+  const passwordHash = await bcrypt.hash(uuidv4(), SALT_ROUNDS); // random, unusable password
+  const [client] = await db
+    .insert(clientsTable)
+    .values({
+      id,
+      email:           profile.email.toLowerCase(),
+      passwordHash,
+      fullName:        profile.name,
+      phone:           "+000000000000",
+      brokerCode:      process.env["BROKER_CODE"] ?? "0001",
+      kycStatus:       "pending",
+      kycTier:         "tier1",
+      cashBalanceKobo: 50_000_000,
+    })
+    .returning();
+
+  if (!client) throw new Error("Failed to create account from Google profile");
+
+  const accessToken  = signToken({ sub: client.id, role: client.role });
+  const refreshToken = signRefreshToken(client.id);
+  const refreshHash  = await bcrypt.hash(refreshToken, 10);
+  await db
+    .update(clientsTable)
+    .set({ refreshTokenHash: refreshHash })
+    .where(eq(clientsTable.id, id));
+
+  return { client: omitSensitive(client), accessToken, refreshToken };
 }
 
