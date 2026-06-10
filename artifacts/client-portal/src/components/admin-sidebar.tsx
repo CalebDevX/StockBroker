@@ -6,23 +6,25 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
-const navItems = [
-  { label: 'Overview',    icon: LayoutDashboard, href: '/admin'             },
-  { label: 'Clients',     icon: Users,           href: '/admin/clients'     },
-  { label: 'KYC Queue',   icon: ShieldCheck,     href: '/admin/kyc'         },
-  { label: 'Orders',      icon: ClipboardList,   href: '/admin/orders'      },
-  { label: 'Instruments', icon: BarChart2,        href: '/admin/instruments' },
-  { label: 'Funds',       icon: ArrowLeftRight,  href: '/admin/funds'       },
-  { label: 'Support',     icon: MessageCircle,   href: '/admin/support'     },
-  { label: 'Audit Log',   icon: ScrollText,      href: '/admin/audit'       },
-  { label: 'Settings',    icon: Settings,        href: '/admin/settings'    },
-  { label: 'Developer',   icon: Terminal,        href: '/admin/developer'   },
-  { label: 'System',      icon: Activity,        href: '/admin/system'      },
+const ALL_NAV = [
+  { label: 'Overview',    icon: LayoutDashboard, href: '/admin',             roles: ['admin']                      },
+  { label: 'Clients',     icon: Users,           href: '/admin/clients',     roles: ['admin', 'broker', 'compliance'] },
+  { label: 'KYC Queue',   icon: ShieldCheck,     href: '/admin/kyc',         roles: ['admin', 'compliance']        },
+  { label: 'Orders',      icon: ClipboardList,   href: '/admin/orders',      roles: ['admin', 'broker']            },
+  { label: 'Instruments', icon: BarChart2,        href: '/admin/instruments', roles: ['admin']                      },
+  { label: 'Funds',       icon: ArrowLeftRight,  href: '/admin/funds',       roles: ['admin']                      },
+  { label: 'Support',     icon: MessageCircle,   href: '/admin/support',     roles: ['admin']                      },
+  { label: 'Audit Log',   icon: ScrollText,      href: '/admin/audit',       roles: ['admin']                      },
+  { label: 'Settings',    icon: Settings,        href: '/admin/settings',    roles: ['admin']                      },
+  { label: 'Developer',   icon: Terminal,        href: '/admin/developer',   roles: ['admin']                      },
+  { label: 'System',      icon: Activity,        href: '/admin/system',      roles: ['admin']                      },
 ]
 
 export default function AdminSidebar() {
   const [location] = useLocation()
   const { user, logout } = useAuth()
+
+  const navItems = ALL_NAV.filter(item => item.roles.includes(user?.role ?? ''))
 
   function isActive(href: string) {
     if (href === '/admin') return location === '/admin'

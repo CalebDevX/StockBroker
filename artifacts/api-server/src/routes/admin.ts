@@ -57,7 +57,7 @@ const seedInstrumentSchema = z.object({
 
 // ── Orders ───────────────────────────────────────────────────────────────────
 
-router.get("/orders", validateQuery(ordersQuerySchema), async (req, res) => {
+router.get("/orders", requireRole("admin", "broker"), validateQuery(ordersQuerySchema), async (req, res) => {
   try {
     const q = (req as typeof req & { validQuery: z.infer<typeof ordersQuerySchema> }).validQuery;
     const where = q.status ? sql`${ordersTable.status} = ${q.status}` : sql`1=1`;
@@ -96,7 +96,7 @@ router.get("/orders", validateQuery(ordersQuerySchema), async (req, res) => {
   }
 });
 
-router.patch("/orders/:id", validateBody(updateOrderSchema), async (req, res) => {
+router.patch("/orders/:id", requireRole("admin", "broker"), validateBody(updateOrderSchema), async (req, res) => {
   try {
     const body    = req.body as z.infer<typeof updateOrderSchema>;
     const orderId = String(req.params["id"] ?? "");
@@ -359,7 +359,7 @@ router.patch("/clients/:id/role",
 
 // ── KYC Queue ────────────────────────────────────────────────────────────────
 
-router.get("/kyc-queue", async (_req, res) => {
+router.get("/kyc-queue", requireRole("admin", "compliance"), async (_req, res) => {
   try {
     const queue = await db
       .select({
@@ -384,7 +384,7 @@ router.get("/kyc-queue", async (_req, res) => {
 
 // ── Metrics ──────────────────────────────────────────────────────────────────
 
-router.get("/metrics", async (_req, res) => {
+router.get("/metrics", requireRole("admin", "broker"), async (_req, res) => {
   try {
     const orderResult = await db.execute(sql`
       SELECT
@@ -424,7 +424,7 @@ router.get("/metrics", async (_req, res) => {
 
 // ── Instruments ──────────────────────────────────────────────────────────────
 
-router.get("/instruments", async (_req, res) => {
+router.get("/instruments", requireRole("admin"), async (_req, res) => {
   try {
     const instruments = await db.select().from(instrumentsTable)
       .orderBy(instrumentsTable.symbol);
@@ -508,7 +508,7 @@ router.patch("/instruments/:symbol",
 
 // ── Transactions ─────────────────────────────────────────────────────────────
 
-router.get("/transactions", validateQuery(pageSchema), async (req, res) => {
+router.get("/transactions", requireRole("admin"), validateQuery(pageSchema), async (req, res) => {
   try {
     const q = (req as typeof req & { validQuery: z.infer<typeof pageSchema> }).validQuery;
 
@@ -541,7 +541,7 @@ router.get("/transactions", validateQuery(pageSchema), async (req, res) => {
 
 // ── Audit Log ────────────────────────────────────────────────────────────────
 
-router.get("/settings", async (_req, res) => {
+router.get("/settings", requireRole("admin"), async (_req, res) => {
   try {
     const settings = await db
       .select({ key: settingsTable.key, value: settingsTable.value })
@@ -553,7 +553,7 @@ router.get("/settings", async (_req, res) => {
   }
 });
 
-router.patch("/settings", validateBody(z.object({ settings: z.record(z.any()) })), async (req, res) => {
+router.patch("/settings", requireRole("admin"), validateBody(z.object({ settings: z.record(z.any()) })), async (req, res) => {
   try {
     const body = req.body as { settings: Record<string, unknown> };
     const updates = Object.entries(body.settings);
@@ -579,7 +579,7 @@ router.patch("/settings", validateBody(z.object({ settings: z.record(z.any()) })
 
 // ── Audit Log ────────────────────────────────────────────────────────────────
 
-router.get("/audit-log", validateQuery(auditQuerySchema), async (req, res) => {
+router.get("/audit-log", requireRole("admin"), validateQuery(auditQuerySchema), async (req, res) => {
   try {
     const q = (req as typeof req & { validQuery: z.infer<typeof auditQuerySchema> }).validQuery;
     const where = q.action

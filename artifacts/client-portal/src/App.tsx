@@ -52,12 +52,25 @@ function GuestGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-const ADMIN_ROLES = ['admin', 'broker', 'compliance']
-function AdminGuard({ children }: { children: React.ReactNode }) {
+// Role-based guards for the admin panel
+function RoleGuard({ children, roles, fallback = '/dashboard' }: {
+  children: React.ReactNode; roles: string[]; fallback?: string
+}) {
   const { user, isLoading } = useAuth()
   if (isLoading) return SPINNER
   if (!user) return <Redirect to="/" />
-  if (!ADMIN_ROLES.includes(user.role)) return <Redirect to="/dashboard" />
+  if (!roles.includes(user.role)) return <Redirect to={fallback} />
+  return <>{children}</>
+}
+
+// /admin overview — admin only; broker/compliance are redirected to their own landing pages
+function AdminOverviewGuard({ children }: { children: React.ReactNode }) {
+  const { user, isLoading } = useAuth()
+  if (isLoading) return SPINNER
+  if (!user) return <Redirect to="/" />
+  if (user.role === 'broker')     return <Redirect to="/admin/orders" />
+  if (user.role === 'compliance') return <Redirect to="/admin/kyc" />
+  if (user.role !== 'admin')      return <Redirect to="/dashboard" />
   return <>{children}</>
 }
 
@@ -120,40 +133,40 @@ export default function App() {
 
         {/* Admin / Broker / Compliance panel */}
         <Route path="/admin">
-          <AdminGuard><AdminOverview /></AdminGuard>
+          <AdminOverviewGuard><AdminOverview /></AdminOverviewGuard>
         </Route>
         <Route path="/admin/clients">
-          <AdminGuard><AdminClients /></AdminGuard>
+          <RoleGuard roles={['admin','broker','compliance']}><AdminClients /></RoleGuard>
         </Route>
         <Route path="/admin/clients/:id">
-          <AdminGuard><AdminClientDetail /></AdminGuard>
+          <RoleGuard roles={['admin','broker','compliance']}><AdminClientDetail /></RoleGuard>
         </Route>
         <Route path="/admin/kyc">
-          <AdminGuard><AdminKycQueue /></AdminGuard>
+          <RoleGuard roles={['admin','compliance']}><AdminKycQueue /></RoleGuard>
         </Route>
         <Route path="/admin/orders">
-          <AdminGuard><AdminOrders /></AdminGuard>
+          <RoleGuard roles={['admin','broker']}><AdminOrders /></RoleGuard>
         </Route>
         <Route path="/admin/instruments">
-          <AdminGuard><AdminInstruments /></AdminGuard>
+          <RoleGuard roles={['admin']}><AdminInstruments /></RoleGuard>
         </Route>
         <Route path="/admin/funds">
-          <AdminGuard><AdminFunds /></AdminGuard>
+          <RoleGuard roles={['admin']}><AdminFunds /></RoleGuard>
         </Route>
         <Route path="/admin/audit">
-          <AdminGuard><AdminAudit /></AdminGuard>
+          <RoleGuard roles={['admin']}><AdminAudit /></RoleGuard>
         </Route>
         <Route path="/admin/settings">
-          <AdminGuard><AdminSettings /></AdminGuard>
+          <RoleGuard roles={['admin']}><AdminSettings /></RoleGuard>
         </Route>
         <Route path="/admin/system">
-          <AdminGuard><AdminSystem /></AdminGuard>
+          <RoleGuard roles={['admin']}><AdminSystem /></RoleGuard>
         </Route>
         <Route path="/admin/support">
-          <AdminGuard><AdminSupport /></AdminGuard>
+          <RoleGuard roles={['admin']}><AdminSupport /></RoleGuard>
         </Route>
         <Route path="/admin/developer">
-          <AdminGuard><AdminDeveloper /></AdminGuard>
+          <RoleGuard roles={['admin']}><AdminDeveloper /></RoleGuard>
         </Route>
 
         <Route>
