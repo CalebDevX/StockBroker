@@ -19,7 +19,7 @@ function MoverRow({ mover, isGainer, rank }: { mover: Mover; isGainer: boolean; 
         <p className="text-[10px] text-muted-foreground truncate leading-tight">{mover.name}</p>
       </div>
       <div className="text-right shrink-0">
-        <p className="text-xs font-mono font-semibold text-foreground">₦{mover.lastPriceNaira.toFixed(2)}</p>
+        <p className="text-xs font-mono font-semibold text-foreground">₦{Number(mover.lastPriceNaira).toFixed(2)}</p>
         <div className={`inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-sm ${
           isGainer ? 'bg-[#0ecb81]/15 text-[#0ecb81]' : 'bg-[#f6465d]/15 text-[#f6465d]'
         }`}>

@@ -6,7 +6,7 @@ function TickerItem({ inst }: { inst: InstrumentLite }) {
   return (
     <span className="inline-flex items-center gap-2 px-5 border-r border-border/50 shrink-0">
       <span className="text-[11px] font-bold text-foreground tracking-wide">{inst.symbol}</span>
-      <span className="text-[11px] font-mono text-foreground">₦{inst.lastPriceNaira.toFixed(2)}</span>
+      <span className="text-[11px] font-mono text-foreground">₦{Number(inst.lastPriceNaira).toFixed(2)}</span>
     </span>
   )
 }
