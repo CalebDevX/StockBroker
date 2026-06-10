@@ -317,13 +317,37 @@ router.patch("/clients/:id/role",
       const clientId = String(req.params["id"] ?? "");
       const { role } = req.body as { role: "client" | "broker" | "admin" | "compliance" };
 
+      // Block self-demotion — an admin cannot change their own role
+      if (clientId === req.auth.sub) {
+        res.status(400).json({ error: "You cannot change your own role. Ask another admin to do this." });
+        return;
+      }
+
+      // Prevent removing the last admin account from the platform
+      if (role !== "admin") {
+        const [{ adminCount }] = await db
+          .select({ adminCount: sql<number>`count(*)::int` })
+          .from(clientsTable)
+          .where(eq(clientsTable.role, "admin"));
+        if (adminCount <= 1) {
+          const [target] = await db
+            .select({ role: clientsTable.role })
+            .from(clientsTable)
+            .where(eq(clientsTable.id, clientId));
+          if (target?.role === "admin") {
+            res.status(400).json({ error: "Cannot demote the last admin. Promote another user to admin first." });
+            return;
+          }
+        }
+      }
+
       await db.update(clientsTable).set({ role, updatedAt: new Date() })
         .where(eq(clientsTable.id, clientId));
 
       await db.insert(auditLogTable).values({
         id: uuidv4(), actorId: req.auth.sub, clientId,
         action: "admin.client.role_change", entityType: "client", entityId: clientId,
-        details: { role } as Record<string, unknown>, ipAddress: req.ip,
+        details: { newRole: role } as Record<string, unknown>, ipAddress: req.ip,
       });
 
       res.json({ id: clientId, role });

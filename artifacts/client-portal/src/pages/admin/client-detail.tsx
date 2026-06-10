@@ -1,14 +1,18 @@
 import { useState } from 'react'
 import { useRoute, Link } from 'wouter'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ChevronLeft, UserX, UserCheck, ShieldCheck, ShieldX } from 'lucide-react'
+import { ChevronLeft, UserX, UserCheck, ShieldAlert } from 'lucide-react'
 import AdminLayout, { Badge, kycVariant, orderVariant } from '@/components/admin-layout'
 import { adminApi, fmtKobo } from '@/lib/api'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function AdminClientDetail() {
   const [, params] = useRoute('/admin/clients/:id')
   const id = params?.id ?? ''
   const qc = useQueryClient()
+  const { user } = useAuth()
+
+  const isSelf = !!user?.id && user.id === id
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin-client', id],
@@ -18,6 +22,7 @@ export default function AdminClientDetail() {
 
   const [kycNote, setKycNote] = useState('')
   const [roleVal, setRoleVal] = useState('')
+  const [roleError, setRoleError] = useState('')
 
   const kycMut = useMutation({
     mutationFn: (status: 'verified' | 'rejected' | 'under_review') =>
@@ -32,7 +37,8 @@ export default function AdminClientDetail() {
 
   const roleMut = useMutation({
     mutationFn: (role: string) => adminApi.changeRole(id, { role }),
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['admin-client', id] }); setRoleVal('') },
+    onSuccess:  () => { qc.invalidateQueries({ queryKey: ['admin-client', id] }); setRoleVal(''); setRoleError('') },
+    onError:    (err: unknown) => setRoleError((err as Error).message ?? 'Failed to change role'),
   })
 
   if (isLoading) return (
@@ -191,22 +197,54 @@ export default function AdminClientDetail() {
 
             {/* Change Role */}
             <div className="bg-card border border-border rounded-xl p-4">
-              <h3 className="text-sm font-bold text-foreground mb-3">Role</h3>
-              <p className="text-xs text-muted-foreground mb-2">Current: <strong className="text-foreground">{client.role}</strong></p>
-              <select
-                value={roleVal} onChange={e => setRoleVal(e.target.value)}
-                className="w-full px-3 py-2 text-xs bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary mb-2">
-                <option value="">Select new role…</option>
-                {['client','broker','compliance','admin'].map(r => (
-                  <option key={r} value={r}>{r}</option>
-                ))}
-              </select>
-              <button
-                onClick={() => roleVal && roleMut.mutate(roleVal)}
-                disabled={!roleVal || roleMut.isPending}
-                className="w-full py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 disabled:opacity-50 transition-all">
-                Change Role
-              </button>
+              <h3 className="text-sm font-bold text-foreground mb-1">Role</h3>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs text-muted-foreground">Current:</span>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                  client.role === 'admin' ? 'bg-amber-500/15 text-amber-400' :
+                  client.role === 'broker' ? 'bg-blue-500/15 text-blue-400' :
+                  client.role === 'compliance' ? 'bg-purple-500/15 text-purple-400' :
+                  'bg-muted text-muted-foreground'
+                }`}>{client.role}</span>
+              </div>
+
+              {isSelf ? (
+                <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2.5 flex items-start gap-2">
+                  <ShieldAlert className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-[11px] text-amber-300 leading-snug">
+                    You cannot change your own role. Ask another admin to update your account.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="mb-2 text-[10px] text-muted-foreground space-y-0.5">
+                    <p><strong className="text-foreground">client</strong> — trading platform only, no admin access</p>
+                    <p><strong className="text-foreground">broker</strong> — admin panel, client & order management</p>
+                    <p><strong className="text-foreground">compliance</strong> — admin panel, KYC review & approvals</p>
+                    <p><strong className="text-foreground">admin</strong> — full access including role management</p>
+                  </div>
+                  <select
+                    value={roleVal} onChange={e => { setRoleVal(e.target.value); setRoleError('') }}
+                    className="w-full px-3 py-2 text-xs bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary mb-2">
+                    <option value="">Select new role…</option>
+                    {['client','broker','compliance','admin'].filter(r => r !== client.role).map(r => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                  {roleError && (
+                    <p className="text-[11px] text-rose-400 mb-2">{roleError}</p>
+                  )}
+                  {roleMut.isSuccess && (
+                    <p className="text-[11px] text-emerald-400 mb-2">Role updated successfully.</p>
+                  )}
+                  <button
+                    onClick={() => roleVal && roleMut.mutate(roleVal)}
+                    disabled={!roleVal || roleMut.isPending}
+                    className="w-full py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 disabled:opacity-50 transition-all">
+                    {roleMut.isPending ? 'Updating…' : 'Change Role'}
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Positions summary */}
