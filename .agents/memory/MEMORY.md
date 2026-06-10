@@ -1,1 +1,2 @@
 - [NGX Platform Architecture](ngx-platform.md) — monorepo layout, build/restart pattern, and key schema facts
+- [Layout Pattern](layout-pattern.md) — correct fixed-sidebar layout pattern for all client pages (pl-56 not ml-56)

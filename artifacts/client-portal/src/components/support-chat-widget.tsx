@@ -122,14 +122,14 @@ export default function SupportChatWidget() {
     <>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-50 w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all flex items-center justify-center"
+        className="fixed bottom-[74px] right-4 md:bottom-6 md:right-6 z-50 w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all flex items-center justify-center"
         aria-label="Support chat"
       >
         {open ? <X className="w-5 h-5" /> : <MessageCircle className="w-5 h-5" />}
       </button>
 
       {open && (
-        <div className="fixed bottom-36 right-4 md:bottom-20 md:right-6 z-50 w-[340px] max-h-[520px] bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+        <div className="fixed bottom-[138px] right-2 left-2 md:left-auto md:bottom-20 md:right-6 z-50 md:w-[340px] max-h-[72dvh] md:max-h-[520px] bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden">
           <div className="flex items-center gap-2.5 px-4 py-3 border-b border-border bg-card">
             <div className="w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center">
               {isEscalated

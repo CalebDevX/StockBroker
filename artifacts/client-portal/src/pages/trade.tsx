@@ -85,10 +85,10 @@ export default function TradePage() {
   }
 
   return (
-    <div className="flex bg-background min-h-screen">
+    <div className="bg-background min-h-screen overflow-x-hidden">
       <DashboardSidebar />
 
-      <div className="flex-1 md:ml-56 flex flex-col min-h-screen">
+      <div className="md:pl-56 flex flex-col min-h-screen">
         <MarketTicker />
 
         {/* Page header — compact on mobile */}
@@ -130,14 +130,14 @@ export default function TradePage() {
           ))}
         </div>
 
-        <main className="flex-1 p-4 md:p-5 pb-24 md:pb-5 space-y-4 mt-3 md:mt-0">
+        <main className="flex-1 p-3 md:p-5 pb-24 md:pb-6 space-y-3 mt-3 md:mt-0 max-w-[1400px] w-full mx-auto">
           {/* Instrument header (shown when selected) */}
           {selectedInstrument && <InstrumentHeader instrument={selectedInstrument} />}
 
           {/* Mobile: single-panel view toggled by tab */}
           <div className="md:hidden">
             {mobileTab === 'search' && (
-              <div className="h-[calc(100svh-260px)] min-h-[320px]">
+              <div className="h-[calc(100dvh-240px)] min-h-[300px]">
                 <InstrumentSearch
                   onSelect={handleSelect}
                   selectedSymbol={selectedInstrument?.symbol}
@@ -145,7 +145,7 @@ export default function TradePage() {
               </div>
             )}
             {mobileTab === 'order' && (
-              <div>
+              <div className="pb-4">
                 {selectedInstrument
                   ? <OrderForm selectedSymbol={selectedInstrument.symbol} selectedPrice={selectedInstrument.price} />
                   : <EmptyOrder />
@@ -155,37 +155,38 @@ export default function TradePage() {
           </div>
 
           {/* Desktop: side-by-side */}
-          <div className="hidden md:grid grid-cols-1 lg:grid-cols-5 gap-4">
-            <div className="lg:col-span-2 h-[520px] lg:h-[640px]">
+          <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="md:col-span-1 lg:col-span-2 h-[540px] lg:h-[660px]">
               <InstrumentSearch
                 onSelect={setSelectedInstrument}
                 selectedSymbol={selectedInstrument?.symbol}
               />
             </div>
-            <div className="lg:col-span-3 flex flex-col gap-4">
+            <div className="md:col-span-1 lg:col-span-3 flex flex-col gap-4">
               {selectedInstrument ? (
                 <>
                   <OrderForm
                     selectedSymbol={selectedInstrument.symbol}
                     selectedPrice={selectedInstrument.price}
                   />
-                  <div className="rounded-[2rem] border border-[#0ecb81]/15 bg-[#0b0e11]/80 p-5 shadow-[0_20px_40px_-30px_rgba(14,203,129,0.6)]">
-                    <p className="text-xs uppercase tracking-[0.24em] text-[#0ecb81]/80">Quick checklist</p>
-                    <ul className="mt-4 space-y-2 text-sm text-muted-foreground list-disc list-inside">
+                  <div className="rounded-2xl border border-[#0ecb81]/15 bg-[#0b0e11]/80 p-5">
+                    <p className="text-xs uppercase tracking-[0.24em] text-[#0ecb81]/80 font-semibold mb-3">Quick checklist</p>
+                    <ul className="space-y-2 text-sm text-muted-foreground list-disc list-inside">
                       <li>Confirm your order type matches your risk target.</li>
                       <li>Set a limit price when the market is volatile.</li>
+                      <li>NGX settlement is T+2 — plan your cash accordingly.</li>
                       <li>Monitor filled orders from the Orders page.</li>
                     </ul>
                   </div>
                 </>
               ) : (
-                <div className="flex h-full min-h-[400px] flex-col items-center justify-center gap-4 rounded-[1.5rem] border border-border bg-[#0b0e11]/80 p-8 text-center text-muted-foreground">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-[#0ecb81]/10 border border-[#0ecb81]/15">
-                    <Activity className="w-8 h-8 text-[#0ecb81]" />
+                <div className="flex h-full min-h-[360px] flex-col items-center justify-center gap-4 rounded-2xl border border-border bg-[#0b0e11]/80 p-8 text-center text-muted-foreground">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#0ecb81]/10 border border-[#0ecb81]/15">
+                    <Activity className="w-7 h-7 text-[#0ecb81]" />
                   </div>
                   <div>
-                    <p className="text-base font-semibold text-foreground mb-1">Select a stock to trade</p>
-                    <p className="text-sm">Search for any NGX-listed instrument on the left to begin order entry.</p>
+                    <p className="text-sm font-semibold text-foreground mb-1">Select a stock to trade</p>
+                    <p className="text-xs">Search for any NGX-listed instrument on the left to begin order entry.</p>
                   </div>
                 </div>
               )}
