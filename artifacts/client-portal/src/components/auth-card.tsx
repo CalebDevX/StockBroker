@@ -134,7 +134,7 @@ export default function AuthCard() {
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input type="email" placeholder="you@example.com"
                   value={loginEmail} onChange={e => setLoginEmail(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); loginPwRef.current?.focus() } }}
+                  onKeyDown={e => { if (e.key === 'Enter' && !loginPw) { e.preventDefault(); loginPwRef.current?.focus() } }}
                   className={inp + ' pl-11'} autoComplete="email" autoFocus />
               </div>
             </div>
