@@ -60,13 +60,7 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
 function AuthenticatedMobileUI() {
   const { user, isLoading } = useAuth()
   if (isLoading || !user) return null
-  return (
-    <>
-      <MobileBottomNav />
-      <TradeFAB />
-      <MoreDrawer />
-    </>
-  )
+  return <MobileBottomNav />
 }
 
 export default function App() {
