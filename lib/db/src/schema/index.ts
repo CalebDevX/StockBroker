@@ -177,6 +177,16 @@ export const settingsTable = pgTable("settings", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (t) => [uniqueIndex("settings_key_idx").on(t.key)]);
 
+export const notificationsTable = pgTable("notifications", {
+  id:        text("id").primaryKey(),
+  clientId:  text("client_id").notNull().references(() => clientsTable.id),
+  type:      text("type").notNull(),
+  title:     text("title").notNull(),
+  message:   text("message").notNull(),
+  isRead:    boolean("is_read").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const otpCodesTable = pgTable("otp_codes", {
   id:                text("id").primaryKey(),
   clientId:          text("client_id"),

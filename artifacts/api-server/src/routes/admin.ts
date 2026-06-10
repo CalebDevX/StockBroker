@@ -6,6 +6,7 @@ import { db } from "@workspace/db";
 import { getMode, setMode, type TradingMode } from "../services/trading-mode.js";
 import { startFixSession, getFixSession } from "../services/fix-session.js";
 import { sendKycStatusNotification } from "../services/notification.js";
+import { createNotification } from "../services/notifications-service.js";
 import { logger } from "../lib/logger.js";
 import {
   ordersTable, clientsTable, instrumentsTable,
@@ -259,9 +260,23 @@ router.patch("/clients/:id/kyc",
         .where(eq(clientsTable.id, clientId))
         .limit(1);
 
-      if (client[0] && body.kycStatus !== 'under_review') {
-        sendKycStatusNotification(client[0].email, client[0].phone, client[0].fullName, body.kycStatus)
-          .catch((err) => logger.error({ err, clientId, status: body.kycStatus }, "KYC notification delivery failed"));
+      if (client[0]) {
+        if (body.kycStatus !== 'under_review') {
+          sendKycStatusNotification(client[0].email, client[0].phone, client[0].fullName, body.kycStatus)
+            .catch((err) => logger.error({ err, clientId, status: body.kycStatus }, "KYC notification delivery failed"));
+        }
+        const kycTitle = body.kycStatus === 'verified'
+          ? 'KYC approved — account verified'
+          : body.kycStatus === 'rejected'
+            ? 'KYC rejected — action required'
+            : 'KYC under review';
+        const kycMsg = body.kycStatus === 'verified'
+          ? 'Your identity verification is complete. Your account is fully activated for trading.'
+          : body.kycStatus === 'rejected'
+            ? 'Your KYC submission was not approved. Please re-submit with valid documents or contact support.'
+            : 'Your documents have been received and are under review by our compliance team.';
+        createNotification({ clientId, type: 'kyc_update', title: kycTitle, message: kycMsg })
+          .catch((err) => logger.error({ err, clientId }, "KYC in-app notification failed"));
       }
     } catch (err: unknown) {
       res.status(500).json({ error: (err as Error).message });

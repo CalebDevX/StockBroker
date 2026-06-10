@@ -1,16 +1,11 @@
 import { useState } from 'react'
 import DashboardSidebar from '@/components/dashboard-sidebar'
 import {
-  ArrowDownToLine, ArrowUpFromLine, Building2, Plus, Clock,
+  ArrowDownToLine, ArrowUpFromLine, Building2,
   CheckCircle2, AlertCircle, Copy, Loader2, Wallet, ArrowRight,
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { portfolioApi, fundsApi, fmtKobo, type Transaction } from '@/lib/api'
-
-const LINKED_ACCOUNTS = [
-  { bank: 'First Bank Nigeria', accountNo: '****4521', primary: true },
-  { bank: 'Zenith Bank',        accountNo: '****8803', primary: false },
-]
 
 const BROKER_ACCOUNT = {
   bank: 'Stanbic IBTC Bank',
@@ -25,7 +20,7 @@ export default function FundsPage() {
   const qc = useQueryClient()
   const [activeTab, setActiveTab]     = useState<ActiveTab>('deposit')
   const [withdrawAmount, setWithdrawAmount] = useState('')
-  const [selectedAccount, setSelectedAccount] = useState(0)
+  const [bankName, setBankName]       = useState('')
   const [copied, setCopied]           = useState(false)
   const [feedback, setFeedback]       = useState<{ ok: boolean; msg: string } | null>(null)
 
@@ -44,8 +39,7 @@ export default function FundsPage() {
   const withdrawMutation = useMutation({
     mutationFn: () => {
       const amountNaira = parseFloat(withdrawAmount)
-      const bankName = LINKED_ACCOUNTS[selectedAccount]?.bank ?? 'My Bank'
-      return fundsApi.withdraw(amountNaira, bankName)
+      return fundsApi.withdraw(amountNaira, bankName || 'My Bank')
     },
     onSuccess: (data) => {
       setFeedback({
@@ -53,6 +47,7 @@ export default function FundsPage() {
         msg: `Withdrawal of ₦${data.amountNaira.toLocaleString()} requested. Ref: ${data.reference}. Processing in 1–3 business days.`,
       })
       setWithdrawAmount('')
+      setBankName('')
       qc.invalidateQueries({ queryKey: ['portfolio-summary'] })
       qc.invalidateQueries({ queryKey: ['transactions'] })
       setTimeout(() => setFeedback(null), 8000)
@@ -84,7 +79,7 @@ export default function FundsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           {[
             { label: 'Available Cash',      kobo: cashKobo, sub: 'Ready to trade',     color: 'text-primary'    },
-            { label: 'Pending Settlements', kobo: 0,        sub: 'T+3 settlement',     color: 'text-yellow-400' },
+            { label: 'Pending Settlements', kobo: 0,        sub: 'T+2 settlement',     color: 'text-yellow-400' },
             { label: 'Total Withdrawable',  kobo: cashKobo, sub: 'After settlement',   color: 'text-accent'     },
           ].map((card) => (
             <div key={card.label} className="bg-card border border-border rounded-xl p-5">
@@ -218,34 +213,27 @@ export default function FundsPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Destination Account</label>
-                      <div className="space-y-2">
-                        {LINKED_ACCOUNTS.map((acc, i) => (
-                          <button key={i} onClick={() => setSelectedAccount(i)}
-                            className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left ${
-                              selectedAccount === i ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/50'
-                            }`}>
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${selectedAccount === i ? 'bg-primary/20' : 'bg-muted/30'}`}>
-                              <Building2 className={`w-4 h-4 ${selectedAccount === i ? 'text-primary' : 'text-muted-foreground'}`} />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-foreground text-sm font-medium truncate">{acc.bank}</p>
-                              <p className="text-muted-foreground text-xs">{acc.accountNo}</p>
-                            </div>
-                            {acc.primary && (
-                              <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full">Primary</span>
-                            )}
-                          </button>
-                        ))}
-                        <button className="w-full flex items-center gap-2 p-3 rounded-lg border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-primary/50 transition-all text-sm">
-                          <Plus className="w-4 h-4" /> Add bank account
-                        </button>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Destination Bank <span className="text-red-400">*</span>
+                      </label>
+                      <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-background">
+                        <Building2 className="w-4 h-4 text-muted-foreground shrink-0" />
+                        <input
+                          type="text"
+                          placeholder="e.g. Zenith Bank — 0123456789"
+                          value={bankName}
+                          onChange={(e) => setBankName(e.target.value)}
+                          className="flex-1 bg-transparent text-sm text-foreground placeholder-muted-foreground focus:outline-none"
+                        />
                       </div>
+                      <p className="text-muted-foreground text-xs mt-1">
+                        Enter the bank name and account number your funds should be sent to.
+                      </p>
                     </div>
 
                     <button
                       onClick={() => withdrawMutation.mutate()}
-                      disabled={!withdrawAmount || withdrawNaira <= 0 || withdrawKobo > cashKobo || withdrawMutation.isPending}
+                      disabled={!withdrawAmount || withdrawNaira <= 0 || withdrawKobo > cashKobo || !bankName.trim() || withdrawMutation.isPending}
                       className="w-full bg-primary disabled:opacity-40 text-primary-foreground font-semibold py-3 px-4 rounded-lg transition-all duration-200 text-sm"
                     >
                       {withdrawMutation.isPending ? (
@@ -255,7 +243,7 @@ export default function FundsPage() {
                       ) : 'Request Withdrawal'}
                     </button>
                     <p className="text-muted-foreground text-xs text-center">
-                      Withdrawals processed within <strong className="text-foreground">1–3 business days</strong>. Subject to T+3 settlement rules.
+                      Withdrawals processed within <strong className="text-foreground">1–3 business days</strong>. Subject to T+2 settlement rules.
                     </p>
                   </div>
                 )}
@@ -266,7 +254,7 @@ export default function FundsPage() {
           <div className="space-y-4">
             <div className="rounded-[2rem] border border-[#0ecb81]/15 bg-[#0b0e11]/80 p-6 shadow-[0_30px_60px_-40px_rgba(14,203,129,0.6)]">
               <h3 className="text-xl font-semibold text-foreground">Bank transfer info</h3>
-              <p className="mt-2 text-sm text-muted-foreground">Use your unique reference when transferring to the broker account.</p>
+              <p className="mt-2 text-sm text-muted-foreground">Use your registered name as narration when transferring to the broker account.</p>
               <div className="mt-6 space-y-4">
                 {[
                   { label: 'Bank', value: BROKER_ACCOUNT.bank },
@@ -288,8 +276,8 @@ export default function FundsPage() {
               </div>
             </div>
             <div className="rounded-[2rem] border border-[#0ecb81]/15 bg-[#0b0e11]/80 p-6 shadow-[0_30px_60px_-40px_rgba(14,203,129,0.6)]">
-              <h3 className="text-xl font-semibold text-foreground">Liquidity note</h3>
-              <p className="mt-3 text-sm text-muted-foreground leading-6">Deposits are matched to your trading account within one business day after confirmation. Withdrawals follow SEC settlement rules and may take 1–3 business days.</p>
+              <h3 className="text-xl font-semibold text-foreground">Settlement note</h3>
+              <p className="mt-3 text-sm text-muted-foreground leading-6">Deposits are credited within one business day after bank confirmation. Withdrawals follow SEC T+2 settlement rules and are processed within 1–3 business days.</p>
             </div>
           </div>
         </div>
@@ -332,7 +320,7 @@ export default function FundsPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-foreground text-sm font-medium capitalize">{tx.type}</p>
-                      <p className="text-muted-foreground text-xs truncate">{tx.reference}</p>
+                      <p className="text-muted-foreground text-xs truncate">{tx.description || tx.reference}</p>
                     </div>
                     <div className="text-right shrink-0">
                       <p className={`text-sm font-semibold ${isCredit ? 'text-primary' : 'text-foreground'}`}>

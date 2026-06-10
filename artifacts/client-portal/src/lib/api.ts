@@ -147,12 +147,20 @@ export interface Transaction {
   createdAt: string
 }
 
+export interface ChartPoint { date: string; valueKobo: number }
+export interface SectorSlice { name: string; valueKobo: number; percentage: number }
+
 export const portfolioApi = {
-  // GET /api/portfolio — returns summary directly (no wrapper)
   summary: () => apiFetch<PortfolioSummary>('/portfolio'),
   holdings: () => apiFetch<{ holdings: Holding[] }>('/portfolio/holdings'),
   transactions: (limit = 20) =>
     apiFetch<{ transactions: Transaction[] }>(`/portfolio/transactions?limit=${limit}`),
+  chart: () =>
+    apiFetch<{ points: ChartPoint[]; hasData: boolean }>('/portfolio/chart'),
+  sectorAllocation: () =>
+    apiFetch<{ sectors: SectorSlice[]; totalEquityKobo: number; hasPositions: boolean }>(
+      '/portfolio/sector-allocation',
+    ),
 }
 
 // ─── Orders ───────────────────────────────────────────────────────────
@@ -254,6 +262,40 @@ export const fundsApi = {
       method: 'POST',
       body: JSON.stringify({ amountNaira, bankName }),
     }),
+}
+
+// ─── Notifications ────────────────────────────────────────────────────
+export interface AppNotification {
+  id: string; clientId: string; type: string
+  title: string; message: string; isRead: boolean; createdAt: string
+}
+
+export const notificationsApi = {
+  list: () => apiFetch<{ notifications: AppNotification[]; unreadCount: number }>('/notifications'),
+  markRead: (id: string) =>
+    apiFetch<{ ok: boolean }>(`/notifications/${id}/read`, { method: 'PATCH' }),
+  markAllRead: () =>
+    apiFetch<{ ok: boolean }>('/notifications/read-all', { method: 'PATCH' }),
+}
+
+// ─── Reports ──────────────────────────────────────────────────────────
+export const reportsApi = {
+  transactions: (params?: { from?: string; to?: string; limit?: number }) => {
+    const p = new URLSearchParams()
+    if (params?.from)  p.set('from',  params.from)
+    if (params?.to)    p.set('to',    params.to)
+    if (params?.limit) p.set('limit', String(params.limit))
+    return apiFetch<{ transactions: Transaction[]; count: number }>(
+      `/reports/transactions${p.toString() ? '?' + p : ''}`,
+    )
+  },
+  csvUrl: (params?: { from?: string; to?: string }) => {
+    const p = new URLSearchParams({ format: 'csv' })
+    if (params?.from) p.set('from', params.from)
+    if (params?.to)   p.set('to',   params.to)
+    const token = localStorage.getItem('access_token') ?? ''
+    return `${BASE}/reports/transactions?${p}&_token=${encodeURIComponent(token)}`
+  },
 }
 
 // ─── Admin ────────────────────────────────────────────────────────────

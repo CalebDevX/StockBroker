@@ -61,7 +61,7 @@ export default function OrderForm({ selectedSymbol, selectedPrice }: OrderFormPr
         ok: true,
         msg: isLive
           ? `Order sent to NGX ATS — Ref: ${ord.id.slice(0, 8).toUpperCase()}`
-          : `[DEMO] ${side.toUpperCase()} ${qty} ${ord.symbol} — filling in ~2s`,
+          : `Order submitted — ${side.toUpperCase()} ${qty} ${ord.symbol} — filling shortly`,
       })
       setQuantity('')
       setLimitPrice('')
@@ -100,7 +100,7 @@ export default function OrderForm({ selectedSymbol, selectedPrice }: OrderFormPr
           </span>
         ) : (
           <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-bold bg-[#0ecb81]/15 text-[#0ecb81] border border-[#0ecb81]/30">
-            <TestTube2 className="w-2.5 h-2.5" /> DEMO
+            <TestTube2 className="w-2.5 h-2.5" /> SIM
           </span>
         )}
       </div>
@@ -297,13 +297,13 @@ export default function OrderForm({ selectedSymbol, selectedPrice }: OrderFormPr
           ) : (
             `${side === 'buy' ? 'BUY' : 'SELL'} ${selectedSymbol || '—'}${
               qty > 0 ? ` × ${qty.toLocaleString()}` : ''
-            }${isLive ? ' [LIVE]' : ' [DEMO]'}`
+            }${isLive ? ' [LIVE]' : ''}`
           )}
         </button>
 
         {!isLive && (
           <p className="text-center text-[10px] text-muted-foreground -mt-1">
-            Demo mode · No real money · Orders fill in 1–10 s
+            Simulation mode · Orders execute against live NGX prices
           </p>
         )}
       </div>

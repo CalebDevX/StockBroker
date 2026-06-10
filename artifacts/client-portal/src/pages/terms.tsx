@@ -63,7 +63,7 @@ export default function TermsPage() {
 
         <Section title="5. Fees & Charges">
           <p>
-            Commission rates and applicable charges (SEC levy, NSE fee, CSCS fee, stamp duty) are disclosed at the point of order placement and are subject to regulatory minimums. No fees are charged on demo transactions.
+            Commission rates and applicable charges (SEC levy, NSE fee, CSCS fee, stamp duty) are disclosed at the point of order placement and are subject to regulatory minimums. All fees are charged at the time of trade execution and are non-refundable except in cases of execution error.
           </p>
         </Section>
 
@@ -73,31 +73,25 @@ export default function TermsPage() {
           </p>
         </Section>
 
-        <Section title="7. Platform Demo">
-          <p>
-            The "Try Demo" feature provides a simulated trading environment using real NGX market data but fictitious account balances. Demo trades have no monetary value and do not constitute real securities transactions. Demo access may be withdrawn at any time without notice.
-          </p>
-        </Section>
-
-        <Section title="8. Prohibited Conduct">
+        <Section title="7. Prohibited Conduct">
           <p>
             You may not use the platform to engage in market manipulation, insider trading, wash trading, or any activity prohibited under the Investments and Securities Act (ISA) 2007. Violations will be reported to SEC Nigeria and relevant law enforcement authorities.
           </p>
         </Section>
 
-        <Section title="9. Limitation of Liability">
+        <Section title="8. Limitation of Liability">
           <p>
             To the maximum extent permitted by law, StockBroker NG's liability for any claim arising from use of this platform is limited to the fees paid by you in the preceding three months. We are not liable for indirect, incidental, or consequential losses.
           </p>
         </Section>
 
-        <Section title="10. Governing Law & Disputes">
+        <Section title="9. Governing Law & Disputes">
           <p>
             These Terms are governed by the laws of the Federal Republic of Nigeria. Any disputes shall first be submitted to mediation under the Lagos Chamber of Commerce and Industry Arbitration Rules before any court proceedings.
           </p>
         </Section>
 
-        <Section title="11. Amendments">
+        <Section title="10. Amendments">
           <p>
             We may update these Terms at any time. Material changes will be communicated via email or in-app notification. Continued use of the platform after such notice constitutes acceptance of the updated Terms.
           </p>

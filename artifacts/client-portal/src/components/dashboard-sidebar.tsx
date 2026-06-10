@@ -21,7 +21,7 @@ const NAV_ITEMS = [
   { label: 'Settings', icon: Settings,        href: '/settings'  },
 ]
 
-function ModeBadge({ compact = false }: { compact?: boolean }) {
+export function ModeBadge({ compact = false }: { compact?: boolean }) {
   const { mode, fixLoggedOn } = useTradingMode()
   if (mode === 'live') {
     return (
@@ -38,12 +38,10 @@ function ModeBadge({ compact = false }: { compact?: boolean }) {
       bg-[#0ecb81]/15 text-[#0ecb81] border border-[#0ecb81]/30
       ${compact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]'}`}>
       <TestTube2 className={`${compact ? 'w-2 h-2' : 'w-2.5 h-2.5'}`} />
-      DEMO
+      SIM
     </span>
   )
 }
-
-export { ModeBadge }
 
 function MarketHours() {
   const now = new Date()
@@ -69,7 +67,6 @@ function MarketHours() {
 export default function DashboardSidebar() {
   const [location] = useLocation()
   const { user, logout } = useAuth()
-  const { mode } = useTradingMode()
 
   function isActive(href: string) {
     return location === href || location.startsWith(href + '/')
@@ -93,10 +90,9 @@ export default function DashboardSidebar() {
               </div>
               <div className="leading-tight">
                 <p className="text-sm font-bold text-foreground leading-none">StockBroker</p>
-                <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-[0.18em]">Elite Portal</p>
+                <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-[0.18em]">NGX Portal</p>
               </div>
             </div>
-            <ModeBadge compact />
           </div>
           <MarketHours />
         </div>
@@ -152,34 +148,6 @@ export default function DashboardSidebar() {
         </div>
       </aside>
 
-      {/* ── Mobile bottom nav ── */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-card border-t border-border">
-        <div className="flex items-stretch">
-          {NAV_ITEMS.map(({ label, icon: Icon, href }) => {
-            const active = isActive(href)
-            return (
-              <Link key={label} href={href}
-                className={`flex-1 flex flex-col items-center justify-center gap-1 py-2.5 px-1 transition-all ${
-                  active ? 'text-[#0ecb81]' : 'text-muted-foreground'
-                }`}>
-                <div className={`flex items-center justify-center w-7 h-7 rounded-md transition-all ${
-                  active ? 'bg-[#0ecb81]/15' : ''
-                }`}>
-                  <Icon className="w-4 h-4" />
-                </div>
-                <span className={`text-[9px] font-semibold leading-none ${active ? 'text-[#0ecb81]' : 'text-muted-foreground'}`}>
-                  {label}
-                </span>
-              </Link>
-            )
-          })}
-        </div>
-        <div className={`flex items-center justify-center py-1 text-[8px] font-black tracking-widest ${
-          mode === 'live' ? 'bg-[#f0b90b]/15 text-[#f0b90b]' : 'bg-[#0ecb81]/10 text-[#0ecb81]'
-        }`}>
-          {mode === 'live' ? '⚠ LIVE TRADING — REAL ORDERS' : '✦ DEMO MODE — NO REAL MONEY'}
-        </div>
-      </nav>
     </>
   )
 }

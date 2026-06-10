@@ -1,11 +1,9 @@
 /**
- * Demo Fill Engine — simulates NGX ATS order execution for DEMO mode.
+ * Simulated Fill Engine — simulates NGX ATS order execution when TRADING_MODE=demo.
  *
- * In demo mode orders are filled by this engine after a realistic delay,
- * with a small random price variation to mimic market spread.
- * The fill logic (position updates, transaction records, WebSocket broadcast)
- * is identical to what the live FIX session does so the client sees the same
- * execution flow regardless of mode.
+ * Orders are filled after a realistic delay with a small random price variation
+ * to mimic market spread. The fill logic (position updates, transaction records,
+ * WebSocket broadcast) is identical to what the live FIX session does.
  */
 
 import { v4 as uuidv4 } from "uuid";
@@ -16,6 +14,7 @@ import {
 import { eq, and } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 import { getWsServer } from "../websocket.js";
+import { createNotification } from "./notifications-service.js";
 
 // Simulate realistic execution delay
 function fillDelayMs(orderType: "market" | "limit"): number {
@@ -38,18 +37,11 @@ export function scheduleDemoFill(params: {
   side:         "buy" | "sell";
   orderType:    "market" | "limit";
   quantity:     number;
-  priceKobo:    number; // fill reference price
+  priceKobo:    number;
 }): void {
   const delay = fillDelayMs(params.orderType);
-
-  setTimeout(() => {
-    void executeDemoFill(params);
-  }, delay);
-
-  logger.info(
-    { clOrdId: params.clOrdId, delayMs: Math.round(delay) },
-    "DEMO: fill scheduled",
-  );
+  setTimeout(() => { void executeDemoFill(params); }, delay);
+  logger.info({ clOrdId: params.clOrdId, delayMs: Math.round(delay) }, "fill scheduled (simulated)");
 }
 
 async function executeDemoFill(params: {
@@ -63,7 +55,6 @@ async function executeDemoFill(params: {
   priceKobo: number;
 }): Promise<void> {
   try {
-    // Refresh current price from DB for market orders
     let fillPriceKobo = params.priceKobo;
     if (params.orderType === "market") {
       const [inst] = await db
@@ -76,28 +67,32 @@ async function executeDemoFill(params: {
       fillPriceKobo = jitterPrice(params.priceKobo);
     }
 
-    // 1. Mark order filled
     await db.update(ordersTable).set({
-      status:          "filled",
-      filledQuantity:  params.quantity,
+      status:           "filled",
+      filledQuantity:   params.quantity,
       avgFillPriceKobo: fillPriceKobo,
-      filledAt:        new Date(),
-      updatedAt:       new Date(),
+      filledAt:         new Date(),
+      updatedAt:        new Date(),
     }).where(eq(ordersTable.id, params.orderId));
 
-    // 2. Apply fill to position + transactions
     if (params.side === "buy") {
       await applyBuyFill(params.clientId, params.symbol, params.quantity, fillPriceKobo, params.orderId);
     } else {
       await applySellFill(params.clientId, params.symbol, params.quantity, fillPriceKobo, params.orderId);
     }
 
-    logger.info(
-      { clOrdId: params.clOrdId, fillPriceKobo, qty: params.quantity },
-      "DEMO: order filled",
-    );
+    logger.info({ clOrdId: params.clOrdId, fillPriceKobo, qty: params.quantity }, "order filled (simulated)");
 
-    // 3. Broadcast execution event via WebSocket
+    // Notify the client
+    const priceStr = `₦${(fillPriceKobo / 100).toFixed(2)}`;
+    await createNotification({
+      clientId: params.clientId,
+      type:     "order_filled",
+      title:    `Order filled: ${params.side === "buy" ? "Bought" : "Sold"} ${params.symbol}`,
+      message:  `${params.quantity} unit${params.quantity > 1 ? "s" : ""} of ${params.symbol} ${params.side === "buy" ? "bought" : "sold"} @ ${priceStr}. Order ref: ${params.clOrdId.slice(0, 12).toUpperCase()}.`,
+    });
+
+    // Broadcast execution event via WebSocket
     try {
       getWsServer().broadcast(params.clOrdId, {
         type:           "execution",
@@ -110,14 +105,13 @@ async function executeDemoFill(params: {
         fillPriceNaira: fillPriceKobo / 100,
         cumQty:         params.quantity,
         timestamp:      new Date().toISOString(),
-        mode:           "demo",
       });
     } catch {
-      // WS server may not be set up yet — non-fatal
+      // WS server may not be set up — non-fatal
     }
 
   } catch (err) {
-    logger.error({ err, orderId: params.orderId }, "DEMO: fill failed");
+    logger.error({ err, orderId: params.orderId }, "fill failed (simulated)");
   }
 }
 
@@ -132,19 +126,17 @@ async function applyBuyFill(
 
   const totalQty = (existing?.quantity ?? 0) + qty;
   const newAvgKobo = existing
-    ? Math.round(
-        ((existing.avgCostKobo * existing.quantity) + (fillPriceKobo * qty)) / totalQty,
-      )
+    ? Math.round(((existing.avgCostKobo * existing.quantity) + (fillPriceKobo * qty)) / totalQty)
     : fillPriceKobo;
 
   if (existing) {
     await db.update(positionsTable).set({
-      quantity:         totalQty,
-      avgCostKobo:      newAvgKobo,
-      currentPriceKobo: fillPriceKobo,
-      marketValueKobo:  totalQty * fillPriceKobo,
+      quantity:          totalQty,
+      avgCostKobo:       newAvgKobo,
+      currentPriceKobo:  fillPriceKobo,
+      marketValueKobo:   totalQty * fillPriceKobo,
       unrealisedPnlKobo: (fillPriceKobo - newAvgKobo) * totalQty,
-      updatedAt:        new Date(),
+      updatedAt:         new Date(),
     }).where(and(eq(positionsTable.clientId, clientId), eq(positionsTable.symbol, symbol)));
   } else {
     await db.insert(positionsTable).values({
@@ -164,14 +156,14 @@ async function applyBuyFill(
     .from(clientsTable).where(eq(clientsTable.id, clientId)).limit(1);
 
   await db.insert(transactionsTable).values({
-    id:              uuidv4(),
+    id:               uuidv4(),
     clientId,
     orderId,
-    type:            "buy",
-    amountKobo:      -(qty * fillPriceKobo),
+    type:             "buy",
+    amountKobo:       -(qty * fillPriceKobo),
     balanceAfterKobo: client?.cashBalanceKobo ?? 0,
-    reference:       `DEMOFILL-${orderId.slice(0, 8).toUpperCase()}`,
-    description:     `[DEMO] Buy fill: ${qty} × ${symbol} @ ₦${(fillPriceKobo / 100).toFixed(2)}`,
+    reference:        `FILL-${orderId.slice(0, 8).toUpperCase()}`,
+    description:      `Buy fill: ${qty} × ${symbol} @ ₦${(fillPriceKobo / 100).toFixed(2)}`,
   });
 }
 
@@ -187,16 +179,15 @@ async function applySellFill(
   if (pos) {
     const newQty = Math.max(0, pos.quantity - qty);
     await db.update(positionsTable).set({
-      quantity:         newQty,
-      reservedQuantity: Math.max(0, (pos.reservedQuantity ?? 0) - qty),
-      currentPriceKobo: fillPriceKobo,
-      marketValueKobo:  newQty * fillPriceKobo,
+      quantity:          newQty,
+      reservedQuantity:  Math.max(0, (pos.reservedQuantity ?? 0) - qty),
+      currentPriceKobo:  fillPriceKobo,
+      marketValueKobo:   newQty * fillPriceKobo,
       unrealisedPnlKobo: newQty > 0 ? (fillPriceKobo - pos.avgCostKobo) * newQty : 0,
-      updatedAt:        new Date(),
+      updatedAt:         new Date(),
     }).where(and(eq(positionsTable.clientId, clientId), eq(positionsTable.symbol, symbol)));
   }
 
-  // Credit proceeds to cash balance
   const proceeds = qty * fillPriceKobo;
   const [client] = await db.select().from(clientsTable).where(eq(clientsTable.id, clientId)).limit(1);
   if (client) {
@@ -212,8 +203,8 @@ async function applySellFill(
       type:             "sell",
       amountKobo:       proceeds,
       balanceAfterKobo: newBalance,
-      reference:        `DEMOFILL-${orderId.slice(0, 8).toUpperCase()}`,
-      description:      `[DEMO] Sell fill: ${qty} × ${symbol} @ ₦${(fillPriceKobo / 100).toFixed(2)}`,
+      reference:        `FILL-${orderId.slice(0, 8).toUpperCase()}`,
+      description:      `Sell fill: ${qty} × ${symbol} @ ₦${(fillPriceKobo / 100).toFixed(2)}`,
     });
   }
 }

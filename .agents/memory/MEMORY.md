@@ -1,0 +1,1 @@
+- [NGX Platform Architecture](ngx-platform.md) — monorepo layout, build/restart pattern, and key schema facts
