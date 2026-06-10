@@ -23,10 +23,13 @@ import AdminFunds       from '@/pages/admin/funds'
 import AdminAudit       from '@/pages/admin/audit'
 import AdminSettings    from '@/pages/admin/settings'
 import AdminSystem      from '@/pages/admin/system'
+import AdminSupport     from '@/pages/admin/support'
+import AdminDeveloper   from '@/pages/admin/developer'
 import { useAuth } from '@/contexts/AuthContext'
 import MobileBottomNav from '@/components/mobile/MobileBottomNav'
 import MoreDrawer from '@/components/mobile/MoreDrawer'
 import TradeFAB from '@/components/mobile/TradeFAB'
+import SupportChatWidget from '@/components/support-chat-widget'
 
 const SPINNER = (
   <div className="flex items-center justify-center min-h-screen bg-background">
@@ -61,6 +64,12 @@ function AuthenticatedMobileUI() {
   const { user, isLoading } = useAuth()
   if (isLoading || !user) return null
   return <MobileBottomNav />
+}
+
+function ClientSupportWidget() {
+  const { user, isLoading } = useAuth()
+  if (isLoading || !user) return null
+  return <SupportChatWidget />
 }
 
 export default function App() {
@@ -138,12 +147,19 @@ export default function App() {
         <Route path="/admin/system">
           <AdminGuard><AdminSystem /></AdminGuard>
         </Route>
+        <Route path="/admin/support">
+          <AdminGuard><AdminSupport /></AdminGuard>
+        </Route>
+        <Route path="/admin/developer">
+          <AdminGuard><AdminDeveloper /></AdminGuard>
+        </Route>
 
         <Route>
           <Redirect to="/" />
         </Route>
       </Switch>
       <AuthenticatedMobileUI />
+      <ClientSupportWidget />
     </WouterRouter>
   )
 }

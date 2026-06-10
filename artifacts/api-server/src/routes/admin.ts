@@ -599,4 +599,50 @@ router.get("/mode", (_req, res) => {
   res.json({ mode, fixConnected: sess?.isConnected ?? false, fixLoggedOn: sess?.isLoggedOn ?? false });
 });
 
+// ── Developer Keys ────────────────────────────────────────────────────────────
+
+router.get("/developer-keys", requireRole("admin"), async (_req, res) => {
+  try {
+    const [row] = await db
+      .select({ value: settingsTable.value })
+      .from(settingsTable)
+      .where(eq(settingsTable.key, "dev_api_keys"))
+      .limit(1);
+
+    const keys = (row?.value as Record<string, string> | null) ?? {};
+    res.json({ keys });
+  } catch (err: unknown) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+router.patch(
+  "/developer-keys",
+  requireRole("admin"),
+  validateBody(z.object({ keys: z.record(z.string()) })),
+  async (req, res) => {
+    try {
+      const { keys } = req.body as { keys: Record<string, string> };
+
+      await db
+        .insert(settingsTable)
+        .values({
+          id: uuidv4(),
+          key: "dev_api_keys",
+          value: keys,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: settingsTable.key,
+          set: { value: keys, updatedAt: new Date() },
+        });
+
+      res.json({ ok: true });
+    } catch (err: unknown) {
+      res.status(500).json({ error: (err as Error).message });
+    }
+  },
+);
+
 export default router;

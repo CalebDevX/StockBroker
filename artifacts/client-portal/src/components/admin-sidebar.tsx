@@ -2,7 +2,7 @@ import { Link, useLocation } from 'wouter'
 import {
   LayoutDashboard, Users, ShieldCheck, ClipboardList,
   BarChart2, ScrollText, Settings, LogOut, ChevronLeft, Activity,
-  ArrowLeftRight,
+  ArrowLeftRight, MessageCircle, Terminal,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -13,8 +13,10 @@ const navItems = [
   { label: 'Orders',      icon: ClipboardList,   href: '/admin/orders'      },
   { label: 'Instruments', icon: BarChart2,        href: '/admin/instruments' },
   { label: 'Funds',       icon: ArrowLeftRight,  href: '/admin/funds'       },
+  { label: 'Support',     icon: MessageCircle,   href: '/admin/support'     },
   { label: 'Audit Log',   icon: ScrollText,      href: '/admin/audit'       },
   { label: 'Settings',    icon: Settings,        href: '/admin/settings'    },
+  { label: 'Developer',   icon: Terminal,        href: '/admin/developer'   },
   { label: 'System',      icon: Activity,        href: '/admin/system'      },
 ]
 

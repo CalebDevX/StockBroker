@@ -203,6 +203,33 @@ export const otpCodesTable = pgTable("otp_codes", {
   updatedAt:         timestamp("updated_at").notNull().defaultNow(),
 }, (t) => [uniqueIndex("otp_codes_request_id_idx").on(t.requestId)]);
 
+export const chatStatusEnum = pgEnum("chat_status", [
+  "open", "active", "resolved", "closed",
+]);
+
+export const messageSenderEnum = pgEnum("message_sender", [
+  "client", "bot", "agent",
+]);
+
+export const supportChatsTable = pgTable("support_chats", {
+  id:        text("id").primaryKey(),
+  clientId:  text("client_id").notNull().references(() => clientsTable.id),
+  agentId:   text("agent_id"),
+  status:    chatStatusEnum("status").notNull().default("open"),
+  subject:   text("subject"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const supportMessagesTable = pgTable("support_messages", {
+  id:         text("id").primaryKey(),
+  chatId:     text("chat_id").notNull().references(() => supportChatsTable.id),
+  senderId:   text("sender_id"),
+  senderRole: messageSenderEnum("sender_role").notNull(),
+  content:    text("content").notNull(),
+  createdAt:  timestamp("created_at").notNull().defaultNow(),
+});
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export type Client     = typeof clientsTable.$inferSelect;

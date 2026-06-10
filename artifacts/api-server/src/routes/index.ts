@@ -11,6 +11,7 @@ import adminRouter         from "./admin.js";
 import systemRouter        from "./system.js";
 import notificationsRouter from "./notifications.js";
 import reportsRouter       from "./reports.js";
+import supportRouter       from "./support.js";
 
 const router: IRouter = Router();
 
@@ -49,5 +50,6 @@ router.use("/admin",         adminRouter);
 router.use("/system",        systemRouter);
 router.use("/notifications", notificationsRouter);
 router.use("/reports",       reportsRouter);
+router.use("/support",       supportRouter);
 
 export default router;

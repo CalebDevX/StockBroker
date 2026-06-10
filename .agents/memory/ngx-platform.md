@@ -19,5 +19,9 @@ description: Monorepo layout, build/restart pattern, schema facts, and productio
 - `ModeBadge` kept exported from `dashboard-sidebar.tsx` for admin panel use; removed from client-facing pages.
 - Separate `MobileBottomNav` component in `App.tsx` handles mobile nav globally — do NOT add another bottom nav inside `DashboardSidebar`.
 - CSCS/FIX integration stubs present but `FIX_HOST` not set → demo mode auto-activates on startup.
+- Support chat: `support_chats` + `support_messages` tables. Bot reply is synchronous (returned in same POST). Gemini key: env `GEMINI_API_KEY` first, then settings table `dev_api_keys.gemini_api_key`. Admin inbox polls every 4s (React Query refetchInterval). `SupportChatWidget` renders in App.tsx for all authenticated non-admin users.
+- Developer Panel at `/admin/developer` saves all API keys under settings key `dev_api_keys` (JSONB). Services check env first, then `dev_api_keys` setting. Admin only.
+- Role management: fully built in `admin/client-detail.tsx` — Role dropdown + Change Role button visible in the client detail page.
+- `ClientSupportWidget` in App.tsx wraps `SupportChatWidget` (hides for admin/broker/compliance roles via widget-internal guard).
 
 **Why:** Backend requires explicit rebuild because it's compiled TypeScript (esbuild). Frontend is Vite HMR. Forgetting to rebuild causes the old bundle to serve stale routes even after code edits.

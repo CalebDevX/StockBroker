@@ -436,6 +436,65 @@ export const adminApi = {
     apiFetch<{ settings: Record<string, unknown> }>('/admin/settings', {
       method: 'PATCH', body: JSON.stringify({ settings }),
     }),
+
+  getDevKeys: () =>
+    apiFetch<{ keys: Record<string, string> }>('/admin/developer-keys'),
+
+  saveDevKeys: (keys: Record<string, string>) =>
+    apiFetch<{ ok: boolean }>('/admin/developer-keys', {
+      method: 'PATCH', body: JSON.stringify({ keys }),
+    }),
+}
+
+// ─── Support Chat ─────────────────────────────────────────────────────
+export interface SupportChat {
+  id: string
+  clientId: string
+  agentId: string | null
+  status: 'open' | 'active' | 'resolved' | 'closed'
+  subject: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface SupportMessage {
+  id: string
+  chatId: string
+  senderId: string | null
+  senderRole: 'client' | 'bot' | 'agent'
+  content: string
+  createdAt: string
+}
+
+export const supportApi = {
+  createOrGetChat: () =>
+    apiFetch<{ chat: SupportChat; messages: SupportMessage[] }>('/support/chats', { method: 'POST' }),
+
+  getChats: () =>
+    apiFetch<{ chats: SupportChat[] }>('/support/chats'),
+
+  getMessages: (chatId: string) =>
+    apiFetch<{ chat: SupportChat; messages: SupportMessage[] }>(`/support/chats/${chatId}/messages`),
+
+  sendMessage: (chatId: string, body: { content: string; escalate?: boolean }) =>
+    apiFetch<{ message: SupportMessage; botReply?: SupportMessage; escalated?: boolean }>(
+      `/support/chats/${chatId}/messages`,
+      { method: 'POST', body: JSON.stringify(body) },
+    ),
+
+  escalateChat: (chatId: string) =>
+    apiFetch<{ ok: boolean; status: string }>(`/support/chats/${chatId}/escalate`, { method: 'PATCH' }),
+
+  claimChat: (chatId: string) =>
+    apiFetch<{ ok: boolean; agentId: string }>(`/support/chats/${chatId}/claim`, { method: 'PATCH' }),
+
+  resolveChat: (chatId: string) =>
+    apiFetch<{ ok: boolean; status: string }>(`/support/chats/${chatId}/resolve`, { method: 'PATCH' }),
+
+  adminListChats: () =>
+    apiFetch<{ chats: (SupportChat & { clientName?: string; clientEmail?: string; lastMessage?: SupportMessage })[] }>(
+      '/support/chats',
+    ),
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────
