@@ -1,0 +1,36 @@
+MODULE 4 — OPERATIONS & DEPLOYMENT (Slide 5/30)
+
+Direct Real-Time CSCS A2A API Gateway Integration
+Account-to-Account direct API connectivity with the Central Securities Clearing System — the bedrock of live portfolio data.
+
+The Central Securities Clearing System (CSCS) is Nigeria's sole central securities depository, managing custody for 14.2 million CHN accounts holding NGX-listed equities, FGN bonds, state bonds, and corporate commercial paper. Direct A2A API integration eliminates the 24–72 hour CSV-file reconciliation cycle currently used by most brokers and enables real-time settlement data in the client portal.
+
+CLIENT PORTAL → OMS API
+React/Next.js frontend → Express.js OMS API server → Order validation engine. Client submits order via HTTPS POST to /api/v1/orders. Server validates fund sufficiency (BIGINT kobo check), KYC tier, and instrument eligibility before routing.
+
+OMS → NGX ATS (FIX 4.4)
+Validated orders transmitted to NGX Automated Trading System via dedicated FIX 4.4 TCP session (QuickFIX/n library). Execution reports parsed and stored. Average RTT: 48ms. Redundant co-location link with automatic failover.
+
+NGX ATS → CSCS CLEARING
+NGX matches buy/sell orders and submits settlement instructions to CSCS Clearing & Settlement System. CSCS generates CHN debit/credit entries for executed trades. Settlement cycle: T+3 rolling settlement (moving to T+2 per SEC 2025 roadmap).
+
+CSCS A2A → OMS (POST-TRADE)
+CSCS A2A REST API: GET /accounts/{chn}/positions returns real-time holdings by ISIN, quantity, market value (using NGX last-traded price feed). Called on every client portfolio page load. Settlement confirmations pushed via CSCS webhook to OMS webhook endpoint.
+
+OMS → CLIENT PORTAL (WebSocket)
+All execution events broadcast to connected clients via WSS. Message schema: { orderId, status, fillQty, fillPrice, commissionKobo, timestamp }. Client app updates order timeline, portfolio value, and cash balance without page refresh.
+
+SLA Targets:
+
+API Uptime: 99.95%
+Portfolio Data Freshness: < 60s
+Order Status Latency: < 200ms
+Webhook Delivery: 99.9% within 5s
+CSCS Query Rate: 500 req/min
+That's a serious production architecture. The 5-layer flow is clear:
+
+Client Portal submits orders → OMS validates (KYC, funds in kobo, instrument eligibility)
+OMS routes to NGX ATS via FIX 4.4 (QuickFIX/n)
+NGX ATS matches and sends settlement to CSCS
+CSCS A2A feeds real-time positions back to OMS via REST webhook
+OMS pushes execution events to the client portal via WebSocket

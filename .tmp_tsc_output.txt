@@ -1,0 +1,65 @@
+artifacts/client-portal/src/components/market-ticker.tsx(6,20): error TS2339: Property 'changePercent' does not exist on type 'InstrumentLite'.
+artifacts/client-portal/src/components/market-ticker.tsx(13,31): error TS2339: Property 'changePercent' does not exist on type 'InstrumentLite'.
+artifacts/client-portal/src/pages/admin/audit.tsx(50,5): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(options: DefinedInitialDataOptions<unknown, Error, unknown, (string | number)[]>, queryClient?: QueryClient | undefined): DefinedUseQueryResult<unknown, Error>', gave the following error.
+    Object literal may only specify known properties, and 'keepPreviousData' does not exist in type 'DefinedInitialDataOptions<unknown, Error, unknown, (string | number)[]>'.
+  Overload 2 of 3, '(options: UndefinedInitialDataOptions<{ logs: AuditLogEntry[]; count: number; }, Error, { logs: AuditLogEntry[]; count: number; }, (string | number)[]>, queryClient?: QueryClient | undefined): UseQueryResult<...>', gave the following error.
+    Object literal may only specify known properties, and 'keepPreviousData' does not exist in type 'UndefinedInitialDataOptions<{ logs: AuditLogEntry[]; count: number; }, Error, { logs: AuditLogEntry[]; count: number; }, (string | number)[]>'.
+  Overload 3 of 3, '(options: UseQueryOptions<{ logs: AuditLogEntry[]; count: number; }, Error, { logs: AuditLogEntry[]; count: number; }, (string | number)[]>, queryClient?: QueryClient | undefined): UseQueryResult<...>', gave the following error.
+    Object literal may only specify known properties, and 'keepPreviousData' does not exist in type 'UseQueryOptions<{ logs: AuditLogEntry[]; count: number; }, Error, { logs: AuditLogEntry[]; count: number; }, (string | number)[]>'.
+artifacts/client-portal/src/pages/admin/audit.tsx(53,39): error TS2339: Property 'logs' does not exist on type '{}'.
+artifacts/client-portal/src/pages/admin/audit.tsx(129,78): error TS2339: Property 'count' does not exist on type '{}'.
+artifacts/client-portal/src/pages/admin/client-detail.tsx(85,43): error TS2339: Property 'brokerCode' does not exist on type 'AdminClientRow'.
+artifacts/client-portal/src/pages/admin/client-detail.tsx(154,35): error TS2345: Argument of type '(o: Record<string, unknown>) => JSX.Element' is not assignable to parameter of type '(value: AdminOrderRow, index: number, array: AdminOrderRow[]) => Element'.
+  Types of parameters 'o' and 'value' are incompatible.
+    Type 'AdminOrderRow' is not assignable to type 'Record<string, unknown>'.
+      Index signature for type 'string' is missing in type 'AdminOrderRow'.
+artifacts/client-portal/src/pages/admin/clients.tsx(26,5): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(options: DefinedInitialDataOptions<unknown, Error, unknown, (string | number)[]>, queryClient?: QueryClient | undefined): DefinedUseQueryResult<unknown, Error>', gave the following error.
+    Object literal may only specify known properties, and 'keepPreviousData' does not exist in type 'DefinedInitialDataOptions<unknown, Error, unknown, (string | number)[]>'.
+  Overload 2 of 3, '(options: UndefinedInitialDataOptions<{ clients: AdminClientRow[]; count: number; }, Error, { clients: AdminClientRow[]; count: number; }, (string | number)[]>, queryClient?: QueryClient | undefined): UseQueryResult<...>', gave the following error.
+    Object literal may only specify known properties, and 'keepPreviousData' does not exist in type 'UndefinedInitialDataOptions<{ clients: AdminClientRow[]; count: number; }, Error, { clients: AdminClientRow[]; count: number; }, (string | number)[]>'.
+  Overload 3 of 3, '(options: UseQueryOptions<{ clients: AdminClientRow[]; count: number; }, Error, { clients: AdminClientRow[]; count: number; }, (string | number)[]>, queryClient?: QueryClient | undefined): UseQueryResult<...>', gave the following error.
+    Object literal may only specify known properties, and 'keepPreviousData' does not exist in type 'UseQueryOptions<{ clients: AdminClientRow[]; count: number; }, Error, { clients: AdminClientRow[]; count: number; }, (string | number)[]>'.
+artifacts/client-portal/src/pages/admin/clients.tsx(35,25): error TS2339: Property 'clients' does not exist on type '{}'.
+artifacts/client-portal/src/pages/admin/clients.tsx(38,53): error TS2339: Property 'count' does not exist on type '{}'.
+artifacts/client-portal/src/pages/admin/clients.tsx(38,80): error TS2339: Property 'count' does not exist on type '{}'.
+artifacts/client-portal/src/pages/admin/funds.tsx(22,5): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(options: DefinedInitialDataOptions<unknown, Error, unknown, (string | number)[]>, queryClient?: QueryClient | undefined): DefinedUseQueryResult<unknown, Error>', gave the following error.
+    Object literal may only specify known properties, and 'keepPreviousData' does not exist in type 'DefinedInitialDataOptions<unknown, Error, unknown, (string | number)[]>'.
+  Overload 2 of 3, '(options: UndefinedInitialDataOptions<{ transactions: AdminTransaction[]; count: number; }, Error, { transactions: AdminTransaction[]; count: number; }, (string | number)[]>, queryClient?: QueryClient | undefined): UseQueryResult<...>', gave the following error.
+    Object literal may only specify known properties, and 'keepPreviousData' does not exist in type 'UndefinedInitialDataOptions<{ transactions: AdminTransaction[]; count: number; }, Error, { transactions: AdminTransaction[]; count: number; }, (string | number)[]>'.
+  Overload 3 of 3, '(options: UseQueryOptions<{ transactions: AdminTransaction[]; count: number; }, Error, { transactions: AdminTransaction[]; count: number; }, (string | number)[]>, queryClient?: QueryClient | undefined): UseQueryResult<...>', gave the following error.
+    Object literal may only specify known properties, and 'keepPreviousData' does not exist in type 'UseQueryOptions<{ transactions: AdminTransaction[]; count: number; }, Error, { transactions: AdminTransaction[]; count: number; }, (string | number)[]>'.
+artifacts/client-portal/src/pages/admin/funds.tsx(25,41): error TS2339: Property 'transactions' does not exist on type '{}'.
+artifacts/client-portal/src/pages/admin/funds.tsx(87,78): error TS2339: Property 'count' does not exist on type '{}'.
+artifacts/client-portal/src/pages/admin/orders.tsx(23,5): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(options: DefinedInitialDataOptions<unknown, Error, unknown, (string | number)[]>, queryClient?: QueryClient | undefined): DefinedUseQueryResult<unknown, Error>', gave the following error.
+    Object literal may only specify known properties, and 'keepPreviousData' does not exist in type 'DefinedInitialDataOptions<unknown, Error, unknown, (string | number)[]>'.
+  Overload 2 of 3, '(options: UndefinedInitialDataOptions<{ orders: AdminOrderRow[]; count: number; offset: number; }, Error, { orders: AdminOrderRow[]; count: number; offset: number; }, (string | number)[]>, queryClient?: QueryClient | undefined): UseQueryResult<...>', gave the following error.
+    Object literal may only specify known properties, and 'keepPreviousData' does not exist in type 'UndefinedInitialDataOptions<{ orders: AdminOrderRow[]; count: number; offset: number; }, Error, { orders: AdminOrderRow[]; count: number; offset: number; }, (string | number)[]>'.
+  Overload 3 of 3, '(options: UseQueryOptions<{ orders: AdminOrderRow[]; count: number; offset: number; }, Error, { orders: AdminOrderRow[]; count: number; offset: number; }, (string | number)[]>, queryClient?: QueryClient | undefined): UseQueryResult<...>', gave the following error.
+    Object literal may only specify known properties, and 'keepPreviousData' does not exist in type 'UseQueryOptions<{ orders: AdminOrderRow[]; count: number; offset: number; }, Error, { orders: AdminOrderRow[]; count: number; offset: number; }, (string | number)[]>'.
+artifacts/client-portal/src/pages/admin/orders.tsx(32,25): error TS2339: Property 'orders' does not exist on type '{}'.
+artifacts/client-portal/src/pages/admin/orders.tsx(136,78): error TS2339: Property 'count' does not exist on type '{}'.
+artifacts/client-portal/src/pages/admin/settings.tsx(115,28): error TS2559: Type 'string[]' has no properties in common with type 'InvalidateQueryFilters<readonly unknown[]>'.
+artifacts/client-portal/src/pages/admin/settings.tsx(409,40): error TS2339: Property 'isLoading' does not exist on type 'UseMutationResult<{ settings: Record<string, unknown>; }, Error, Record<string, unknown>, unknown>'.
+  Property 'isLoading' does not exist on type 'Override<MutationObserverIdleResult<{ settings: Record<string, unknown>; }, Error, Record<string, unknown>, unknown>, { mutate: UseMutateFunction<{ settings: Record<string, unknown>; }, Error, Record<...>, unknown>; }> & { ...; }'.
+artifacts/client-portal/src/pages/admin/settings.tsx(413,31): error TS2339: Property 'isLoading' does not exist on type 'UseMutationResult<{ settings: Record<string, unknown>; }, Error, Record<string, unknown>, unknown>'.
+  Property 'isLoading' does not exist on type 'Override<MutationObserverIdleResult<{ settings: Record<string, unknown>; }, Error, Record<string, unknown>, unknown>, { mutate: UseMutateFunction<{ settings: Record<string, unknown>; }, Error, Record<...>, unknown>; }> & { ...; }'.
+artifacts/client-portal/src/pages/trade.tsx(27,22): error TS2339: Property 'change' does not exist on type 'InstrumentQuote'.
+artifacts/client-portal/src/pages/trade.tsx(28,25): error TS2551: Property 'changePercent' does not exist on type 'InstrumentQuote'. Did you mean 'changePct'?
+artifacts/client-portal/src/pages/trade.tsx(32,38): error TS2339: Property 'openNaira' does not exist on type 'InstrumentQuote'.
+artifacts/client-portal/src/pages/trade.tsx(32,62): error TS2339: Property 'openNaira' does not exist on type 'InstrumentQuote'.
+artifacts/client-portal/src/pages/trade.tsx(33,38): error TS2339: Property 'highNaira' does not exist on type 'InstrumentQuote'.
+artifacts/client-portal/src/pages/trade.tsx(33,63): error TS2339: Property 'highNaira' does not exist on type 'InstrumentQuote'.
+artifacts/client-portal/src/pages/trade.tsx(34,38): error TS2339: Property 'lowNaira' does not exist on type 'InstrumentQuote'.
+artifacts/client-portal/src/pages/trade.tsx(34,63): error TS2339: Property 'lowNaira' does not exist on type 'InstrumentQuote'.
+artifacts/client-portal/src/pages/trade.tsx(36,38): error TS2339: Property 'high52wNaira' does not exist on type 'InstrumentQuote'.
+artifacts/client-portal/src/pages/trade.tsx(36,63): error TS2339: Property 'high52wNaira' does not exist on type 'InstrumentQuote'.
+artifacts/client-portal/src/pages/trade.tsx(37,38): error TS2339: Property 'low52wNaira' does not exist on type 'InstrumentQuote'.
+artifacts/client-portal/src/pages/trade.tsx(37,63): error TS2339: Property 'low52wNaira' does not exist on type 'InstrumentQuote'.
+artifacts/client-portal/src/pages/trade.tsx(103,17): error TS2322: Type 'Dispatch<SetStateAction<Instrument | undefined>>' is not assignable to type '(instrument: SelectedInstrument) => void'.
+  Types of parameters 'value' and 'instrument' are incompatible.
+    Type 'SelectedInstrument' is not assignable to type 'SetStateAction<Instrument | undefined>'.
+      Type 'SelectedInstrument' is missing the following properties from type 'Instrument': change, changePercent

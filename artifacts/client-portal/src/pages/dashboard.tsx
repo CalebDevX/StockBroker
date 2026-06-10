@@ -1,0 +1,105 @@
+import { Link } from 'wouter'
+import { ArrowRight, Sparkles, TrendingUp, Wallet } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { useAuth } from '@/contexts/AuthContext'
+import DashboardSidebar, { ModeBadge } from '@/components/dashboard-sidebar'
+import MarketTicker from '@/components/market-ticker'
+import StatsBar from '@/components/stats-bar'
+import PortfolioChart from '@/components/portfolio-chart'
+import HoldingsTable from '@/components/holdings-table'
+import MarketMovers from '@/components/market-movers'
+import KycBanner, { KycStatusBadge } from '@/components/kyc-banner'
+import { portfolioApi, ordersApi, fmtKobo } from '@/lib/api'
+
+export default function DashboardPage() {
+  const { user } = useAuth()
+  const greeting = user?.fullName ? `Welcome back, ${user.fullName.split(' ')[0]} 👋` : 'Welcome back'
+
+  const { data: summaryData, isLoading: summaryLoading } = useQuery({
+    queryKey: ['portfolio-summary'],
+    queryFn: portfolioApi.summary,
+    refetchInterval: 30_000,
+  })
+
+  const { data: ordersData } = useQuery({
+    queryKey: ['orders'],
+    queryFn: ordersApi.list,
+    refetchInterval: 15_000,
+  })
+
+  const openOrders = ordersData?.orders.filter(o => ['pending', 'partial'].includes(o.status)).length ?? 0
+  const gainLabel = summaryData ? `${summaryData.pnlPercent.toFixed(2)}%` : '—'
+
+  return (
+    <div className="flex bg-background min-h-screen">
+      <DashboardSidebar />
+      <div className="flex-1 md:ml-56 flex flex-col min-h-screen">
+        <MarketTicker />
+
+        <main className="flex-1 p-4 md:p-6 pb-24 md:pb-6 space-y-5">
+          <section className="rounded-[2rem] border border-[#0ecb81]/15 bg-gradient-to-br from-[#0b0e11] via-[#121820]/70 to-[#111821] p-6 shadow-[0_30px_60px_-40px_rgba(14,203,129,0.65)] backdrop-blur-sm">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-[#0ecb81]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-[#0ecb81]">
+                    <Sparkles className="w-3.5 h-3.5" /> Premium Dashboard
+                  </span>
+                  <ModeBadge />
+                  <KycStatusBadge />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-foreground sm:text-4xl">{greeting}</h1>
+                  <p className="mt-3 max-w-2xl text-sm text-muted-foreground sm:text-base">
+                    Elite NGX execution, live market alerts and portfolio intelligence for active traders.
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <Link href="/trade" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#0ecb81]/20 bg-[#0ecb81]/10 px-4 py-3 text-sm font-semibold text-[#0ecb81] transition hover:bg-[#0ecb81]/15">
+                  <TrendingUp className="w-4 h-4" /> Trade
+                </Link>
+                <Link href="/portfolio" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-background px-4 py-3 text-sm font-semibold text-foreground transition hover:border-[#0ecb81]/40 hover:bg-[#0ecb81]/5">
+                  <Wallet className="w-4 h-4" /> Portfolio
+                </Link>
+                <Link href="/funds" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-background px-4 py-3 text-sm font-semibold text-foreground transition hover:border-[#0ecb81]/40 hover:bg-[#0ecb81]/5">
+                  <ArrowRight className="w-4 h-4" /> Funds
+                </Link>
+              </div>
+            </div>
+          </section>
+
+          <section className="grid gap-4 sm:grid-cols-3">
+            <div className="rounded-[2rem] border border-[#0ecb81]/15 bg-[#0b0e11]/80 p-5 shadow-[0_20px_40px_-30px_rgba(14,203,129,0.6)]">
+              <p className="text-xs uppercase tracking-[0.24em] text-[#0ecb81]/70">Portfolio value</p>
+              <p className="mt-3 text-3xl font-semibold text-foreground">
+                {summaryLoading ? 'Loading…' : summaryData ? fmtKobo(summaryData.totalPortfolioKobo) : '—'}
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">Total market value across equities and cash.</p>
+            </div>
+            <div className="rounded-[2rem] border border-[#0ecb81]/15 bg-[#0b0e11]/80 p-5 shadow-[0_20px_40px_-30px_rgba(14,203,129,0.6)]">
+              <p className="text-xs uppercase tracking-[0.24em] text-[#0ecb81]/70">Today’s gain</p>
+              <p className="mt-3 text-3xl font-semibold text-[#0ecb81]">{summaryLoading ? 'Loading…' : gainLabel}</p>
+              <p className="mt-2 text-sm text-muted-foreground">Active positions are outperforming the market.</p>
+            </div>
+            <div className="rounded-[2rem] border border-[#0ecb81]/15 bg-[#0b0e11]/80 p-5 shadow-[0_20px_40px_-30px_rgba(14,203,129,0.6)]">
+              <p className="text-xs uppercase tracking-[0.24em] text-[#0ecb81]/70">Open orders</p>
+              <p className="mt-3 text-3xl font-semibold text-foreground">{ordersData ? openOrders : '—'}</p>
+              <p className="mt-2 text-sm text-muted-foreground">Orders waiting for execution or settlement.</p>
+            </div>
+          </section>
+
+          <KycBanner />
+          <StatsBar />
+
+          <div className="grid grid-cols-1 xl:grid-cols-[1.6fr_0.8fr] gap-5">
+            <div className="space-y-5">
+              <PortfolioChart />
+              <HoldingsTable />
+            </div>
+            <MarketMovers />
+          </div>
+        </main>
+      </div>
+    </div>
+  )
+}

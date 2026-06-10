@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "StockBroker NG Mobile",
+    "slug": "client-portal-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "stockbroker-ng",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#080C14"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.stockbrokerng.mobile"
+    },
+    "android": {
+      "package": "com.stockbrokerng.mobile"
+    },
+    "web": {
+      "favicon": "./assets/images/icon.png"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://stockbroker-ng.com/"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
