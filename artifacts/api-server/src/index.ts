@@ -2,7 +2,7 @@ import { httpServer } from "./app.js";
 import { logger } from "./lib/logger.js";
 import { getMode } from "./services/trading-mode.js";
 import { startFixSession } from "./services/fix-session.js";
-import { seedDemoAccount } from "./services/auth-service.js";
+
 
 const rawPort = process.env["PORT"];
 
@@ -24,5 +24,4 @@ httpServer.listen(port, () => {
   } else {
     logger.info("Demo mode active — orders will be simulated locally");
   }
-  seedDemoAccount().catch(err => logger.error({ err }, "Failed to seed demo account"));
 });

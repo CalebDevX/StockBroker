@@ -167,15 +167,4 @@ router.post("/reset-password",
   }
 );
 
-// POST /api/auth/demo
-router.post("/demo", async (_req, res) => {
-  try {
-    const result = await loginDemo();
-    res.json(result);
-  } catch (err: unknown) {
-    const e = err as Error & { status?: number };
-    res.status(e.status ?? 503).json({ error: e.message });
-  }
-});
-
 export default router;

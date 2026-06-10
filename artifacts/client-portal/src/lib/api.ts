@@ -105,8 +105,6 @@ export const authApi = {
     apiFetch<{ reset: boolean }>('/auth/reset-password', {
       method: 'POST', body: JSON.stringify({ token, newPassword }),
     }),
-  demo: () =>
-    apiFetch<AuthResponse>('/auth/demo', { method: 'POST' }),
 }
 
 // ─── Portfolio ────────────────────────────────────────────────────────

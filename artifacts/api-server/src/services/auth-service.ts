@@ -9,7 +9,6 @@ import { sendPasswordResetEmail } from "./notification.js";
 import { sendOtp, verifyOtp } from "./otp-service.js";
 
 const SALT_ROUNDS = 12;
-const DEMO_EMAIL  = "demo@stockbrokerng.app";
 
 // In-memory password reset tokens: token → { clientId, expires }
 const resetTokens = new Map<string, { clientId: string; expires: Date }>();
@@ -287,57 +286,3 @@ export async function resetPassword(token: string, newPassword: string): Promise
   resetTokens.delete(token);
 }
 
-// ── Platform Demo Account ─────────────────────────────────────────────────────
-
-export async function seedDemoAccount(): Promise<void> {
-  const existing = await db
-    .select({ id: clientsTable.id })
-    .from(clientsTable)
-    .where(eq(clientsTable.email, DEMO_EMAIL))
-    .limit(1);
-  if (existing.length > 0) return;
-
-  const id           = uuidv4();
-  const passwordHash = await bcrypt.hash(uuidv4(), SALT_ROUNDS); // random — login only via /demo
-
-  await db.insert(clientsTable).values({
-    id,
-    email:           DEMO_EMAIL,
-    passwordHash,
-    fullName:        "Demo Investor",
-    phone:           "08001234567",
-    brokerCode:      process.env["BROKER_CODE"] ?? "0001",
-    kycStatus:       "verified",
-    kycTier:         "tier2",
-    cashBalanceKobo: 5_000_000_00, // ₦5,000,000
-    chn:             "NGX-DEMO-001",
-    bvn:             "00000000000",
-    nin:             "00000000000",
-  });
-}
-
-export async function loginDemo(): Promise<{
-  client: SafeClient;
-  accessToken: string;
-  refreshToken: string;
-}> {
-  const [client] = await db
-    .select()
-    .from(clientsTable)
-    .where(eq(clientsTable.email, DEMO_EMAIL))
-    .limit(1);
-
-  if (!client) throw Object.assign(new Error("Demo account unavailable"), { status: 503 });
-
-  const accessToken  = signToken({ sub: client.id, role: client.role });
-  const refreshToken = signRefreshToken(client.id);
-  const refreshHash  = await bcrypt.hash(refreshToken, 10);
-
-  await db.update(clientsTable).set({
-    refreshTokenHash: refreshHash,
-    cashBalanceKobo:  5_000_000_00,
-    lastLoginAt:      new Date(),
-  }).where(eq(clientsTable.id, client.id));
-
-  return { client: omitSensitive(client), accessToken, refreshToken };
-}

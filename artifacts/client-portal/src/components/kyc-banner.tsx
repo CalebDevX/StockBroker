@@ -52,7 +52,7 @@ export default function KycBanner() {
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed">
             SEC Nigeria & CBN require BVN, NIN, and address verification before you can trade.
-            Takes 2 minutes — your ₦500,000 demo balance is ready once verified.
+            Takes 2 minutes — you can start trading once verified.
           </p>
 
           {/* Progress indicator */}
