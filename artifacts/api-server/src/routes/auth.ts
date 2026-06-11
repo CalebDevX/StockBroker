@@ -41,8 +41,8 @@ const registerSchema = z.object({
 });
 
 const loginSchema = z.object({
-  email:    z.string().email(),
-  password: z.string().min(1),
+  identifier: z.string().min(1, "Enter your email or phone number"),
+  password:   z.string().min(1, "Password is required"),
 });
 
 const refreshSchema = z.object({
@@ -126,12 +126,12 @@ router.post("/register", validateBody(registerSchema), async (req, res) => {
 // POST /api/auth/login
 router.post("/login", validateBody(loginSchema), async (req, res) => {
   try {
-    const { email, password } = req.body as z.infer<typeof loginSchema>;
-    const result = await loginClient(email, password);
+    const { identifier, password } = req.body as z.infer<typeof loginSchema>;
+    const result = await loginClient(identifier, password);
     res.json(result);
   } catch (err: unknown) {
-    const e = err as Error & { status?: number };
-    res.status(e.status ?? 500).json({ error: e.message });
+    const e = err as Error & { status?: number; code?: string };
+    res.status(e.status ?? 500).json({ error: e.message, code: e.code });
   }
 });
 

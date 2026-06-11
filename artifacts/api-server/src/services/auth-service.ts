@@ -161,24 +161,57 @@ export async function submitKyc(data: KycSubmission): Promise<SafeClient> {
 
 // ────────────────────────────────────────────────────────────────────────────
 
-export async function loginClient(email: string, password: string): Promise<{
+export async function loginClient(identifier: string, password: string): Promise<{
   client: SafeClient;
   accessToken: string;
   refreshToken: string;
 }> {
-  const [client] = await db
-    .select()
-    .from(clientsTable)
-    .where(eq(clientsTable.email, email.toLowerCase()))
-    .limit(1);
+  const isPhone = /^[+\d][\d\s\-().]{6,}$/.test(identifier.trim()) && !identifier.includes("@");
 
-  if (!client) throw Object.assign(new Error("Invalid email or password"), { status: 401 });
+  let client: typeof clientsTable.$inferSelect | undefined;
+
+  if (isPhone) {
+    const normalized = identifier.replace(/\s+/g, "");
+    const [byPhone] = await db
+      .select()
+      .from(clientsTable)
+      .where(eq(clientsTable.phone, normalized))
+      .limit(1);
+    // Also try with +234 prefix swap for Nigerian numbers
+    if (!byPhone && normalized.startsWith("0")) {
+      const international = "+234" + normalized.slice(1);
+      const [byIntl] = await db
+        .select()
+        .from(clientsTable)
+        .where(eq(clientsTable.phone, international))
+        .limit(1);
+      client = byIntl;
+    } else {
+      client = byPhone;
+    }
+    if (!client) {
+      throw Object.assign(new Error("No account found with this phone number"), { status: 401, code: "NOT_FOUND" });
+    }
+  } else {
+    const [byEmail] = await db
+      .select()
+      .from(clientsTable)
+      .where(eq(clientsTable.email, identifier.toLowerCase()))
+      .limit(1);
+    client = byEmail;
+    if (!client) {
+      throw Object.assign(new Error("No account found with this email address"), { status: 401, code: "NOT_FOUND" });
+    }
+  }
+
   if (!client.isActive || client.isSuspended) {
-    throw Object.assign(new Error("Account suspended or inactive"), { status: 403 });
+    throw Object.assign(new Error("Your account has been suspended. Please contact support."), { status: 403 });
   }
 
   const valid = await bcrypt.compare(password, client.passwordHash);
-  if (!valid) throw Object.assign(new Error("Invalid email or password"), { status: 401 });
+  if (!valid) {
+    throw Object.assign(new Error("Incorrect password. Please try again."), { status: 401, code: "WRONG_PASSWORD" });
+  }
 
   const accessToken  = signToken({ sub: client.id, role: client.role });
   const refreshToken = signRefreshToken(client.id);

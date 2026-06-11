@@ -8,7 +8,7 @@ interface AuthContextValue {
   user: AuthClient | null
   token: string | null
   isLoading: boolean
-  login:             (email: string, password: string) => Promise<void>
+  login:             (identifier: string, password: string) => Promise<void>
   register:          (data: { email: string; password: string; fullName: string; phone: string }) => Promise<void>
   loginWithTokens:   (accessToken: string, refreshToken: string, client: AuthClient) => void
   logout:            () => void
@@ -61,8 +61,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     restoreSession().finally(() => setIsLoading(false))
   }, [])
 
-  const login = useCallback(async (email: string, password: string) => {
-    const res = await authApi.login(email, password)
+  const login = useCallback(async (identifier: string, password: string) => {
+    const res = await authApi.login(identifier, password)
     localStorage.setItem(ACCESS_TOKEN_KEY, res.accessToken)
     localStorage.setItem(REFRESH_TOKEN_KEY, res.refreshToken)
     setToken(res.accessToken)

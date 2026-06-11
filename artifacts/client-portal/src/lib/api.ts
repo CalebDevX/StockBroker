@@ -86,8 +86,8 @@ export interface KycPayload {
 }
 
 export const authApi = {
-  login: (email: string, password: string) =>
-    apiFetch<AuthResponse>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+  login: (identifier: string, password: string) =>
+    apiFetch<AuthResponse>('/auth/login', { method: 'POST', body: JSON.stringify({ identifier, password }) }),
   register: (data: { email: string; password: string; fullName: string; phone: string }) =>
     apiFetch<AuthResponse>('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
   me: () => apiFetch<AuthClient>('/auth/me'),

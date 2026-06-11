@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useLocation } from 'wouter'
-import { Eye, EyeOff, AlertCircle, User, Mail, Lock, ShieldCheck, RotateCcw } from 'lucide-react'
+import { Eye, EyeOff, AlertCircle, CheckCircle2, User, Mail, Lock, Phone, ShieldCheck, RotateCcw } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { authApi } from '@/lib/api'
 import PhoneInput, { COUNTRIES, buildFullPhone, isValidPhone, type Country } from './phone-input'
@@ -16,41 +16,50 @@ function GoogleIcon() {
   )
 }
 
-const inp = 'w-full px-4 py-4 bg-background border border-border rounded-xl text-foreground placeholder-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-base'
+const inp = 'w-full px-4 py-4 bg-background border rounded-xl text-foreground placeholder-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-base'
 const lbl = 'block text-sm font-medium text-foreground mb-2'
 
 function isEmail(v: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) }
+function looksLikePhone(v: string) {
+  const stripped = v.replace(/[\s\-().]/g, '')
+  return /^[+0][\d]{6,}$/.test(stripped)
+}
 
 const DEFAULT_COUNTRY = COUNTRIES[0]
+
+type RegMethod = 'email' | 'phone'
 
 export default function AuthCard() {
   const [, navigate] = useLocation()
   const { login, register } = useAuth()
   const [tab, setTab] = useState<'login' | 'register'>('login')
 
-  const [loginEmail, setLoginEmail] = useState('')
+  // Login
+  const [loginId,    setLoginId]    = useState('')
   const [loginPw,    setLoginPw]    = useState('')
   const [showLoginPw, setShowLoginPw] = useState(false)
+  const loginPwRef = useRef<HTMLInputElement>(null)
 
-  const [fullName,  setFullName]  = useState('')
-  const [email,     setEmail]     = useState('')
-  const [dialCode,  setDialCode]  = useState(DEFAULT_COUNTRY.dial)
+  // Register
+  const [regMethod,  setRegMethod]  = useState<RegMethod>('email')
+  const [fullName,   setFullName]   = useState('')
+  const [email,      setEmail]      = useState('')
+  const [dialCode,   setDialCode]   = useState(DEFAULT_COUNTRY.dial)
   const [selectedCountry, setSelectedCountry] = useState<Country>(DEFAULT_COUNTRY)
   const [localPhone, setLocalPhone] = useState('')
-  const [password,  setPassword]  = useState('')
-  const [showPw,    setShowPw]    = useState(false)
+  const [password,   setPassword]   = useState('')
+  const [showPw,     setShowPw]     = useState(false)
 
+  // OTP
   const [otpStep,      setOtpStep]      = useState(false)
   const [otpRequestId, setOtpRequestId] = useState('')
   const [otpCode,      setOtpCode]      = useState('')
   const [otpLoading,   setOtpLoading]   = useState(false)
   const [otpError,     setOtpError]     = useState('')
-  const [otpExpiry,    setOtpExpiry]    = useState<Date | null>(null)
   const [otpCountdown, setOtpCountdown] = useState(0)
 
-  const loginPwRef = useRef<HTMLInputElement>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [apiError,  setApiError]  = useState('')
+  const [apiError,  setApiError]  = useState<{ message: string; type: 'email' | 'password' | 'general' } | null>(null)
 
   useEffect(() => {
     if (otpCountdown <= 0) return
@@ -59,57 +68,94 @@ export default function AuthCard() {
   }, [otpCountdown])
 
   function resetForm(t: 'login' | 'register') {
-    setTab(t); setApiError(''); setOtpStep(false); setOtpCode(''); setOtpError('')
-    setFullName(''); setEmail(''); setLocalPhone(''); setPassword('')
+    setTab(t); setApiError(null); setOtpStep(false); setOtpCode(''); setOtpError('')
+    setFullName(''); setEmail(''); setLocalPhone(''); setPassword(''); setRegMethod('email')
     setDialCode(DEFAULT_COUNTRY.dial); setSelectedCountry(DEFAULT_COUNTRY)
-    setLoginEmail(''); setLoginPw('')
+    setLoginId(''); setLoginPw('')
   }
+
+  const loginIdIsPhone = looksLikePhone(loginId)
+  const loginIdIsEmail = isEmail(loginId)
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
-    if (!loginEmail || !loginPw) return
-    setIsLoading(true); setApiError('')
+    if (!loginId.trim() || !loginPw) return
+    setIsLoading(true); setApiError(null)
     try {
-      await login(loginEmail, loginPw)
+      await login(loginId.trim(), loginPw)
       navigate('/dashboard')
     } catch (err) {
-      setApiError((err as Error).message)
+      const msg = (err as Error).message
+      if (msg.toLowerCase().includes('password')) {
+        setApiError({ message: msg, type: 'password' })
+      } else if (msg.toLowerCase().includes('no account') || msg.toLowerCase().includes('not found')) {
+        setApiError({ message: msg, type: 'email' })
+      } else {
+        setApiError({ message: msg, type: 'general' })
+      }
     } finally { setIsLoading(false) }
   }
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
-    setApiError('')
-    if (!fullName.trim() || fullName.trim().split(' ').length < 2) {
-      setApiError('Please enter your full name (first and last)'); return
-    }
-    if (!isEmail(email)) { setApiError('Enter a valid email address'); return }
-    if (!isValidPhone(dialCode, localPhone)) {
-      setApiError('Enter a valid phone number'); return
-    }
-    if (password.length < 8) { setApiError('Password must be at least 8 characters'); return }
+    setApiError(null)
 
-    const fullPhone = buildFullPhone(dialCode, localPhone)
-    setIsLoading(true)
-    try {
-      const result = await authApi.sendPhoneOtp(fullPhone)
-      setOtpRequestId(result.requestId)
-      setOtpExpiry(new Date(result.expiresAt))
-      setOtpCountdown(600)
-      setOtpStep(true)
-    } catch (err) {
-      setApiError((err as Error).message)
-    } finally { setIsLoading(false) }
+    if (!fullName.trim() || fullName.trim().split(' ').filter(Boolean).length < 2) {
+      setApiError({ message: 'Please enter your full name (first and last)', type: 'general' }); return
+    }
+
+    if (regMethod === 'email') {
+      if (!isEmail(email)) { setApiError({ message: 'Enter a valid email address', type: 'email' }); return }
+    } else {
+      if (!isValidPhone(dialCode, localPhone)) {
+        setApiError({ message: 'Enter a valid phone number', type: 'email' }); return
+      }
+    }
+
+    if (password.length < 8) {
+      setApiError({ message: 'Password must be at least 8 characters', type: 'password' }); return
+    }
+
+    const fullPhone = regMethod === 'phone' ? buildFullPhone(dialCode, localPhone) : ''
+    const phoneForOtp = regMethod === 'phone' ? fullPhone : ''
+
+    if (regMethod === 'phone') {
+      setIsLoading(true)
+      try {
+        const result = await authApi.sendPhoneOtp(phoneForOtp)
+        setOtpRequestId(result.requestId)
+        setOtpCountdown(600)
+        setOtpStep(true)
+      } catch (err) {
+        setApiError({ message: (err as Error).message, type: 'general' })
+      } finally { setIsLoading(false) }
+    } else {
+      // Email registration — still require phone for OTP (use the phone field)
+      if (!isValidPhone(dialCode, localPhone)) {
+        setApiError({ message: 'Enter a valid phone number to receive your verification code', type: 'general' }); return
+      }
+      const phoneNum = buildFullPhone(dialCode, localPhone)
+      setIsLoading(true)
+      try {
+        const result = await authApi.sendPhoneOtp(phoneNum)
+        setOtpRequestId(result.requestId)
+        setOtpCountdown(600)
+        setOtpStep(true)
+      } catch (err) {
+        setApiError({ message: (err as Error).message, type: 'general' })
+      } finally { setIsLoading(false) }
+    }
   }
 
   async function handleOtpVerify(e: React.FormEvent) {
     e.preventDefault()
-    if (otpCode.length < 4) { setOtpError('Enter the code sent to your phone'); return }
+    if (otpCode.length < 4) { setOtpError('Enter the verification code sent to your phone'); return }
     setOtpLoading(true); setOtpError('')
     try {
       await authApi.verifyPhoneOtp(otpRequestId, otpCode)
-      const fullPhone = buildFullPhone(dialCode, localPhone)
-      await register({ email, password, fullName: fullName.trim(), phone: fullPhone })
+      const phoneNum = buildFullPhone(dialCode, localPhone)
+      const emailVal = regMethod === 'email' ? email : `${phoneNum.replace(/\D/g, '')}@phone.ngx`
+      await register({ email: emailVal, password, fullName: fullName.trim(), phone: phoneNum })
       navigate('/dashboard')
     } catch (err) {
       setOtpError((err as Error).message)
@@ -118,12 +164,11 @@ export default function AuthCard() {
 
   async function resendOtp() {
     if (otpCountdown > 0) return
-    const fullPhone = buildFullPhone(dialCode, localPhone)
+    const phoneNum = buildFullPhone(dialCode, localPhone)
     setOtpLoading(true); setOtpError('')
     try {
-      const result = await authApi.sendPhoneOtp(fullPhone)
+      const result = await authApi.sendPhoneOtp(phoneNum)
       setOtpRequestId(result.requestId)
-      setOtpExpiry(new Date(result.expiresAt))
       setOtpCountdown(600)
       setOtpCode('')
     } catch (err) {
@@ -160,6 +205,7 @@ export default function AuthCard() {
       </div>
 
       <div className="w-full max-w-sm z-10 py-6">
+        {/* Logo */}
         <div className="flex items-center gap-2.5 mb-8">
           <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
             <span className="text-primary-foreground font-black text-sm">SB</span>
@@ -170,6 +216,7 @@ export default function AuthCard() {
           </div>
         </div>
 
+        {/* Tab switcher */}
         <div className="flex gap-1 mb-6 bg-card p-1 rounded-xl border border-border">
           {(['login', 'register'] as const).map(t => (
             <button key={t} onClick={() => resetForm(t)}
@@ -181,14 +228,37 @@ export default function AuthCard() {
           ))}
         </div>
 
+        {/* Error banner */}
         {apiError && !otpStep && (
-          <div className="mb-4 flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-xl p-3">
-            <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
-            <p className="text-red-400 text-sm">{apiError}</p>
+          <div className={`mb-4 flex items-start gap-2.5 rounded-xl p-3.5 border ${
+            apiError.type === 'password'
+              ? 'bg-orange-500/10 border-orange-500/30'
+              : 'bg-red-500/10 border-red-500/30'
+          }`}>
+            <AlertCircle className={`w-4 h-4 shrink-0 mt-0.5 ${apiError.type === 'password' ? 'text-orange-400' : 'text-red-400'}`} />
+            <div>
+              <p className={`text-sm font-medium ${apiError.type === 'password' ? 'text-orange-300' : 'text-red-400'}`}>
+                {apiError.message}
+              </p>
+              {apiError.type === 'password' && (
+                <a href="/forgot-password" className="text-xs text-orange-400/70 hover:text-orange-300 underline mt-0.5 block transition-colors">
+                  Forgot your password?
+                </a>
+              )}
+              {apiError.type === 'email' && (
+                <button
+                  type="button"
+                  onClick={() => resetForm('register')}
+                  className="text-xs text-red-400/70 hover:text-red-300 underline mt-0.5 block transition-colors"
+                >
+                  Create an account instead
+                </button>
+              )}
+            </div>
           </div>
         )}
 
-        {/* Google sign-in — shown on both tabs when not in OTP step */}
+        {/* Google sign-in */}
         {!otpStep && (
           <>
             <button
@@ -199,7 +269,7 @@ export default function AuthCard() {
               <GoogleIcon />
               Continue with Google
             </button>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 my-4">
               <div className="flex-1 h-px bg-border" />
               <span className="text-xs text-muted-foreground">or</span>
               <div className="flex-1 h-px bg-border" />
@@ -207,38 +277,67 @@ export default function AuthCard() {
           </>
         )}
 
+        {/* ── SIGN IN ─────────────────────────────────────────────────── */}
         {tab === 'login' && (
           <form onSubmit={handleLogin} className="space-y-4 animate-in fade-in-50 duration-200">
             <div>
-              <label className={lbl}>Email Address</label>
+              <label className={lbl}>Email or Phone number</label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input type="email" placeholder="you@example.com"
-                  value={loginEmail} onChange={e => setLoginEmail(e.target.value)}
+                {loginIdIsPhone
+                  ? <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  : <Mail  className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                }
+                <input
+                  type="text"
+                  placeholder="you@example.com or 08012345678"
+                  value={loginId}
+                  onChange={e => { setLoginId(e.target.value); setApiError(null) }}
                   onKeyDown={e => { if (e.key === 'Enter' && !loginPw) { e.preventDefault(); loginPwRef.current?.focus() } }}
-                  className={inp + ' pl-11'} autoComplete="email" autoFocus />
+                  className={`${inp} pl-11 ${
+                    apiError?.type === 'email' ? 'border-red-500/60 focus:ring-red-500' : 'border-border'
+                  }`}
+                  autoComplete="username"
+                  autoFocus
+                  inputMode={loginIdIsPhone ? 'tel' : 'email'}
+                />
+                {loginIdIsEmail && (
+                  <CheckCircle2 className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#0ecb81]" />
+                )}
               </div>
             </div>
+
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="text-sm font-medium text-foreground">Password</label>
-                <a href="/forgot-password" className="text-xs text-muted-foreground hover:text-accent transition-colors">
+                <a href="/forgot-password" className="text-xs text-muted-foreground hover:text-primary transition-colors">
                   Forgot password?
                 </a>
               </div>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input ref={loginPwRef} type={showLoginPw ? 'text' : 'password'} placeholder="••••••••"
-                  value={loginPw} onChange={e => setLoginPw(e.target.value)}
-                  className={inp + ' pl-11 pr-12'} autoComplete="current-password" />
+                <input
+                  ref={loginPwRef}
+                  type={showLoginPw ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={loginPw}
+                  onChange={e => { setLoginPw(e.target.value); setApiError(null) }}
+                  className={`${inp} pl-11 pr-12 ${
+                    apiError?.type === 'password' ? 'border-orange-500/60 focus:ring-orange-500' : 'border-border'
+                  }`}
+                  autoComplete="current-password"
+                />
                 <button type="button" onClick={() => setShowLoginPw(v => !v)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
                   {showLoginPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
-            <button type="submit" disabled={isLoading || !loginEmail || !loginPw}
-              className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl transition-all hover:bg-primary/90 active:scale-[0.98] text-base shadow-lg shadow-primary/20 disabled:opacity-60 mt-2">
+
+            <button
+              type="submit"
+              disabled={isLoading || !loginId.trim() || !loginPw}
+              className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl transition-all hover:bg-primary/90 active:scale-[0.98] text-base shadow-lg shadow-primary/20 disabled:opacity-60 mt-2"
+            >
               {isLoading
                 ? <span className="flex items-center justify-center gap-2">
                     <span className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
@@ -250,33 +349,86 @@ export default function AuthCard() {
           </form>
         )}
 
+        {/* ── CREATE ACCOUNT ──────────────────────────────────────────── */}
         {tab === 'register' && !otpStep && (
           <form onSubmit={handleRegister} className="space-y-4 animate-in fade-in-50 duration-200">
+
+            {/* Method toggle */}
+            <div>
+              <p className="text-sm font-medium text-foreground mb-2">Sign up with</p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setRegMethod('email')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-semibold transition-all ${
+                    regMethod === 'email'
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border bg-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Mail className="w-4 h-4" /> Email
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRegMethod('phone')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-semibold transition-all ${
+                    regMethod === 'phone'
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border bg-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Phone className="w-4 h-4" /> Phone
+                </button>
+              </div>
+            </div>
+
+            {/* Full name */}
             <div>
               <label className={lbl}>Full Name <span className="text-red-400">*</span></label>
               <div className="relative">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input type="text" placeholder="Chukwuemeka Okonkwo"
-                  value={fullName} onChange={e => setFullName(e.target.value)}
-                  className={inp + ' pl-11'} autoFocus autoComplete="name" />
+                <input
+                  type="text"
+                  placeholder="Chukwuemeka Okonkwo"
+                  value={fullName}
+                  onChange={e => setFullName(e.target.value)}
+                  className={inp + ' pl-11 border-border'}
+                  autoFocus
+                  autoComplete="name"
+                />
               </div>
             </div>
 
-            <div>
-              <label className={lbl}>Email Address <span className="text-red-400">*</span></label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input type="email" placeholder="you@example.com"
-                  value={email} onChange={e => setEmail(e.target.value)}
-                  className={inp + ' pl-11'} autoComplete="email" inputMode="email" />
+            {/* Email (shown when regMethod === 'email' OR always as supplemental) */}
+            {regMethod === 'email' && (
+              <div>
+                <label className={lbl}>Email Address <span className="text-red-400">*</span></label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={e => { setEmail(e.target.value); setApiError(null) }}
+                    className={`${inp} pl-11 ${
+                      email && !isEmail(email) ? 'border-red-500/60' : 'border-border'
+                    }`}
+                    autoComplete="email"
+                    inputMode="email"
+                  />
+                </div>
+                {email && !isEmail(email) && (
+                  <p className="text-red-400 text-xs mt-1">Enter a valid email address</p>
+                )}
               </div>
-              {email && !isEmail(email) && (
-                <p className="text-red-400 text-xs mt-1">Enter a valid email address</p>
-              )}
-            </div>
+            )}
 
+            {/* Phone number */}
             <div>
-              <label className={lbl}>Phone Number <span className="text-red-400">*</span></label>
+              <label className={lbl}>
+                Phone Number <span className="text-red-400">*</span>
+                {regMethod === 'email' && <span className="text-muted-foreground font-normal ml-1">(for verification)</span>}
+              </label>
               <PhoneInput
                 localValue={localPhone}
                 dialCode={dialCode}
@@ -294,13 +446,19 @@ export default function AuthCard() {
               </p>
             </div>
 
+            {/* Password */}
             <div>
               <label className={lbl}>Password <span className="text-red-400">*</span></label>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input type={showPw ? 'text' : 'password'} placeholder="At least 8 characters"
-                  value={password} onChange={e => setPassword(e.target.value)}
-                  className={inp + ' pl-11 pr-12'} autoComplete="new-password" />
+                <input
+                  type={showPw ? 'text' : 'password'}
+                  placeholder="At least 8 characters"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className={inp + ' pl-11 pr-12 border-border'}
+                  autoComplete="new-password"
+                />
                 <button type="button" onClick={() => setShowPw(v => !v)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
                   {showPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -312,7 +470,9 @@ export default function AuthCard() {
                     <div className={`h-full rounded-full transition-all duration-500 ${pwStrength.color}`}
                       style={{ width: pwStrength.w }} />
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">Strength: <span className="font-medium text-foreground">{pwStrength.label}</span></p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Password strength: <span className="font-medium text-foreground">{pwStrength.label}</span>
+                  </p>
                 </div>
               )}
             </div>
@@ -330,12 +490,13 @@ export default function AuthCard() {
 
             <p className="text-center text-xs text-muted-foreground pt-1 pb-2">
               By creating an account you agree to our{' '}
-              <a href="/terms" className="text-accent hover:underline">Terms of Service</a> and{' '}
-              <a href="/privacy" className="text-accent hover:underline">Privacy Policy</a>
+              <a href="/terms" className="text-primary hover:underline">Terms of Service</a> and{' '}
+              <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a>
             </p>
           </form>
         )}
 
+        {/* ── OTP VERIFICATION ───────────────────────────────────────── */}
         {tab === 'register' && otpStep && (
           <form onSubmit={handleOtpVerify} className="space-y-5 animate-in fade-in-50 duration-200">
             <div className="text-center">
@@ -365,7 +526,7 @@ export default function AuthCard() {
                 placeholder="123456"
                 value={otpCode}
                 onChange={e => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                className={inp + ' text-center text-2xl font-bold tracking-[0.4em]'}
+                className={inp + ' border-border text-center text-2xl font-bold tracking-[0.4em]'}
                 autoFocus
               />
             </div>
@@ -383,7 +544,7 @@ export default function AuthCard() {
 
             <div className="flex items-center justify-between text-sm">
               <button type="button" onClick={() => { setOtpStep(false); setOtpCode(''); setOtpError('') }}
-                className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
+                className="text-muted-foreground hover:text-foreground transition-colors">
                 ← Back
               </button>
               <button type="button" onClick={resendOtp} disabled={otpCountdown > 0 || otpLoading}
