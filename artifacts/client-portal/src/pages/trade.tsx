@@ -97,7 +97,7 @@ export default function TradePage() {
     <div className="bg-background min-h-screen overflow-x-hidden">
       <DashboardSidebar />
 
-      <div className="md:pl-56 flex flex-col min-h-screen">
+      <div className="md:pl-56 flex flex-col min-h-screen pt-11 md:pt-0">
         <MarketTicker />
 
         {/* Page header */}

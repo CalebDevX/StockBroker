@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTradingMode } from '@/contexts/TradingModeContext'
+import NotificationBell from '@/components/notification-bell'
 
 const ADMIN_ROLES = ['admin', 'broker', 'compliance']
 
@@ -78,6 +79,18 @@ export default function DashboardSidebar() {
 
   return (
     <>
+      {/* ── Mobile top bar ── */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 h-11 bg-[#0b0e11]/95 backdrop-blur-md border-b border-[#0ecb81]/10 flex items-center justify-between px-4">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-lg bg-[#0ecb81] flex items-center justify-center shrink-0">
+            <span className="text-[#0b0e11] text-[8px] font-black tracking-tight">NGX</span>
+          </div>
+          <span className="text-sm font-bold text-foreground">StockBroker</span>
+          <ModeBadge compact />
+        </div>
+        <NotificationBell />
+      </div>
+
       {/* ── Desktop sidebar ── */}
       <aside className="hidden md:flex fixed left-0 top-0 h-screen w-56 bg-[#111821] border-r border-[#0ecb81]/10 flex-col z-20 shadow-[10px_0_60px_-48px_rgba(14,203,129,0.75)]">
 
@@ -93,6 +106,7 @@ export default function DashboardSidebar() {
                 <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-[0.18em]">NGX Portal</p>
               </div>
             </div>
+            <NotificationBell />
           </div>
           <MarketHours />
         </div>

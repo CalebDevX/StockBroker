@@ -69,7 +69,7 @@ export default function ReportsPage() {
   return (
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar />
-      <div className="flex-1 md:ml-56 overflow-auto pb-24 md:pb-0">
+      <div className="flex-1 md:ml-56 overflow-auto pb-24 md:pb-0 pt-11 md:pt-0">
         <div className="p-4 md:p-8">
           {/* Header */}
           <div className="mb-8 rounded-[2rem] border border-[#0ecb81]/15 bg-gradient-to-br from-[#0b0e11] via-[#121820]/70 to-[#111821] p-8 shadow-[0_30px_60px_-40px_rgba(14,203,129,0.65)] backdrop-blur-sm">

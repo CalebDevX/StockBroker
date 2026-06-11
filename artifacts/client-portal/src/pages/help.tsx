@@ -64,7 +64,7 @@ export default function HelpPage() {
   return (
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar />
-      <div className="flex-1 md:ml-56 overflow-auto pb-24 md:pb-0">
+      <div className="flex-1 md:ml-56 overflow-auto pb-24 md:pb-0 pt-11 md:pt-0">
         <div className="p-4 md:p-8">
 
           {/* Header */}

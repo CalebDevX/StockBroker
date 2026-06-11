@@ -280,7 +280,7 @@ export default function SettingsPage() {
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar />
 
-      <div className="flex-1 pl-0 md:pl-56 flex flex-col pb-24 md:pb-6">
+      <div className="flex-1 pl-0 md:pl-56 flex flex-col pb-24 md:pb-6 pt-11 md:pt-0">
         <div className="w-full max-w-lg mx-auto px-4 pt-6 md:pt-8">
 
           {/* ── Identity card ─────────────────────────────────────────── */}

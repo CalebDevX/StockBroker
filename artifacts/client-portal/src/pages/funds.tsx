@@ -70,7 +70,7 @@ export default function FundsPage() {
   return (
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar />
-      <main className="flex-1 md:ml-56 p-4 md:p-8 pb-24 md:pb-8">
+      <main className="flex-1 md:ml-56 p-4 md:p-8 pb-24 md:pb-8 pt-[3.25rem] md:pt-8">
         <div className="mb-6 md:mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">Funds</h1>
           <p className="text-muted-foreground text-sm mt-1">Deposit and withdraw from your trading account</p>

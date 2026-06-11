@@ -32,7 +32,7 @@ export default function DashboardPage() {
     <div className="bg-background min-h-screen overflow-x-hidden">
       <DashboardSidebar />
 
-      <div className="md:pl-56 flex flex-col min-h-screen">
+      <div className="md:pl-56 flex flex-col min-h-screen pt-11 md:pt-0">
         <MarketTicker />
 
         <main className="flex-1 p-3 md:p-5 pb-24 md:pb-6 space-y-3 max-w-[1400px] w-full mx-auto">
