@@ -39,7 +39,8 @@ app.use(
   }),
 );
 
-app.use("/api/cscs/webhook", express.raw({ type: "application/json" }));
+app.use("/api/cscs/webhook",     express.raw({ type: "application/json" }));
+app.use("/api/webhooks/achek",  express.raw({ type: "*/*" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

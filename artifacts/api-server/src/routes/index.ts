@@ -12,6 +12,7 @@ import systemRouter        from "./system.js";
 import notificationsRouter from "./notifications.js";
 import reportsRouter       from "./reports.js";
 import supportRouter       from "./support.js";
+import webhooksRouter      from "./webhooks.js";
 
 const router: IRouter = Router();
 
@@ -51,5 +52,6 @@ router.use("/system",        systemRouter);
 router.use("/notifications", notificationsRouter);
 router.use("/reports",       reportsRouter);
 router.use("/support",       supportRouter);
+router.use("/webhooks",      webhooksRouter);
 
 export default router;
