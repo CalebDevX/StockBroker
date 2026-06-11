@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { CheckCircle2, AlertCircle, Radio, TestTube2, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react'
 import { ordersApi } from '@/lib/api'
@@ -7,6 +7,7 @@ import { useTradingMode } from '@/contexts/TradingModeContext'
 interface OrderFormProps {
   selectedSymbol?: string
   selectedPrice?: number
+  prefillLimitPrice?: number
 }
 
 const inp = 'w-full px-3 py-2.5 bg-[#1e2329] border border-border rounded text-sm text-foreground font-mono placeholder-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-[#0ecb81] focus:border-[#0ecb81] transition-all'
@@ -18,12 +19,19 @@ const ORDER_VALIDITY = [
   { value: 'fok', label: 'FOK', description: 'Fill or kill — execute fully immediately or cancel.' },
 ] as const
 
-export default function OrderForm({ selectedSymbol, selectedPrice }: OrderFormProps) {
+export default function OrderForm({ selectedSymbol, selectedPrice, prefillLimitPrice }: OrderFormProps) {
   const [side, setSide] = useState<'buy' | 'sell'>('buy')
   const [priceType, setPriceType] = useState<'market' | 'limit'>('market')
   const [validity, setValidity] = useState<(typeof ORDER_VALIDITY)[number]['value']>('day')
   const [quantity, setQuantity] = useState('')
   const [limitPrice, setLimitPrice] = useState('')
+
+  useEffect(() => {
+    if (prefillLimitPrice && prefillLimitPrice > 0) {
+      setLimitPrice(prefillLimitPrice.toFixed(2))
+      setPriceType('limit')
+    }
+  }, [prefillLimitPrice])
   const [showFees, setShowFees] = useState(false)
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null)
   const [liveConfirmed, setLiveConfirmed] = useState(false)

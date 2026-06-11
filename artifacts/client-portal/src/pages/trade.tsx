@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { TrendingUp, TrendingDown, Activity, Zap, Search, BookOpen } from 'lucide-react'
+import { TrendingUp, TrendingDown, Activity, Zap, Search, BookOpen, LayoutList } from 'lucide-react'
 import DashboardSidebar from '@/components/dashboard-sidebar'
 import MarketTicker from '@/components/market-ticker'
 import InstrumentSearch, { type SelectedInstrument } from '@/components/instrument-search'
 import OrderForm from '@/components/order-form'
+import OrderBookWidget from '@/components/order-book'
 import { useQuery } from '@tanstack/react-query'
 import { marketApi, type InstrumentQuote } from '@/lib/api'
 import { KycStatusBadge } from '@/components/kyc-banner'
@@ -73,14 +74,21 @@ function EmptyOrder() {
   )
 }
 
-type MobileTab = 'search' | 'order'
+type MobileTab = 'search' | 'order' | 'book'
 
 export default function TradePage() {
   const [selectedInstrument, setSelectedInstrument] = useState<SelectedInstrument | undefined>()
   const [mobileTab, setMobileTab] = useState<MobileTab>('search')
+  const [prefillPrice, setPrefillPrice] = useState<number | undefined>()
 
   function handleSelect(instrument: SelectedInstrument) {
     setSelectedInstrument(instrument)
+    setPrefillPrice(undefined)
+    setMobileTab('order')
+  }
+
+  function handlePriceClick(price: number) {
+    setPrefillPrice(price)
     setMobileTab('order')
   }
 
@@ -91,7 +99,7 @@ export default function TradePage() {
       <div className="md:pl-56 flex flex-col min-h-screen">
         <MarketTicker />
 
-        {/* Page header — compact on mobile */}
+        {/* Page header */}
         <div className="px-4 md:px-5 pt-4 pb-0 md:pt-5">
           <div className="rounded-[2rem] border border-[#0ecb81]/15 bg-gradient-to-br from-[#0b0e11] via-[#121820]/70 to-[#111821] px-5 py-4 md:p-6 shadow-[0_30px_60px_-40px_rgba(14,203,129,0.65)] backdrop-blur-sm">
             <div className="flex items-center justify-between gap-4">
@@ -109,13 +117,17 @@ export default function TradePage() {
           </div>
         </div>
 
-        {/* Mobile tab bar */}
+        {/* Mobile tab bar — 3 tabs */}
         <div className="md:hidden flex mx-4 mt-3 rounded-2xl border border-border/60 bg-[#0b0e11]/80 overflow-hidden">
-          {([['search', Search, 'Search stocks'], ['order', BookOpen, 'Place order']] as const).map(([tab, Icon, label]) => (
+          {([
+            ['search', Search,     'Search'],
+            ['order',  LayoutList, 'Order'],
+            ['book',   BookOpen,   'Book'],
+          ] as const).map(([tab, Icon, label]) => (
             <button
               key={tab}
               onClick={() => setMobileTab(tab)}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-semibold transition-all ${
                 mobileTab === tab
                   ? 'bg-[#0ecb81]/15 text-[#0ecb81] border-b-2 border-[#0ecb81]'
                   : 'text-muted-foreground'
@@ -124,7 +136,7 @@ export default function TradePage() {
               <Icon className="w-4 h-4" />
               {label}
               {tab === 'order' && selectedInstrument && mobileTab !== 'order' && (
-                <span className="w-1.5 h-1.5 rounded-full bg-[#0ecb81] ml-0.5" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#0ecb81]" />
               )}
             </button>
           ))}
@@ -146,39 +158,57 @@ export default function TradePage() {
             )}
             {mobileTab === 'order' && (
               <div className="pb-4">
-                {selectedInstrument
-                  ? <OrderForm selectedSymbol={selectedInstrument.symbol} selectedPrice={selectedInstrument.price} />
-                  : <EmptyOrder />
-                }
+                {selectedInstrument ? (
+                  <OrderForm
+                    selectedSymbol={selectedInstrument.symbol}
+                    selectedPrice={selectedInstrument.price}
+                    prefillLimitPrice={prefillPrice}
+                  />
+                ) : (
+                  <EmptyOrder />
+                )}
+              </div>
+            )}
+            {mobileTab === 'book' && (
+              <div className="pb-4">
+                {selectedInstrument ? (
+                  <OrderBookWidget
+                    symbol={selectedInstrument.symbol}
+                    onPriceClick={handlePriceClick}
+                  />
+                ) : (
+                  <div className="flex h-full min-h-[260px] flex-col items-center justify-center gap-4 rounded-[1.5rem] border border-border bg-[#0b0e11]/80 p-8 text-center text-muted-foreground">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-[#0ecb81]/10 border border-[#0ecb81]/15">
+                      <BookOpen className="w-7 h-7 text-[#0ecb81]" />
+                    </div>
+                    <div>
+                      <p className="text-base font-semibold text-foreground mb-1">No stock selected</p>
+                      <p className="text-sm">Search for a stock to see its order book.</p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
 
-          {/* Desktop: side-by-side */}
-          <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div className="md:col-span-1 lg:col-span-2 h-[540px] lg:h-[660px]">
+          {/* Desktop: 3-column layout */}
+          <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-[2fr_3fr_2fr] gap-4">
+            {/* Left: search */}
+            <div className="h-[600px] lg:h-[700px]">
               <InstrumentSearch
                 onSelect={setSelectedInstrument}
                 selectedSymbol={selectedInstrument?.symbol}
               />
             </div>
-            <div className="md:col-span-1 lg:col-span-3 flex flex-col gap-4">
+
+            {/* Centre: order form */}
+            <div className="flex flex-col gap-4">
               {selectedInstrument ? (
-                <>
-                  <OrderForm
-                    selectedSymbol={selectedInstrument.symbol}
-                    selectedPrice={selectedInstrument.price}
-                  />
-                  <div className="rounded-2xl border border-[#0ecb81]/15 bg-[#0b0e11]/80 p-5">
-                    <p className="text-xs uppercase tracking-[0.24em] text-[#0ecb81]/80 font-semibold mb-3">Quick checklist</p>
-                    <ul className="space-y-2 text-sm text-muted-foreground list-disc list-inside">
-                      <li>Confirm your order type matches your risk target.</li>
-                      <li>Set a limit price when the market is volatile.</li>
-                      <li>NGX settlement is T+2 — plan your cash accordingly.</li>
-                      <li>Monitor filled orders from the Orders page.</li>
-                    </ul>
-                  </div>
-                </>
+                <OrderForm
+                  selectedSymbol={selectedInstrument.symbol}
+                  selectedPrice={selectedInstrument.price}
+                  prefillLimitPrice={prefillPrice}
+                />
               ) : (
                 <div className="flex h-full min-h-[360px] flex-col items-center justify-center gap-4 rounded-2xl border border-border bg-[#0b0e11]/80 p-8 text-center text-muted-foreground">
                   <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#0ecb81]/10 border border-[#0ecb81]/15">
@@ -187,6 +217,26 @@ export default function TradePage() {
                   <div>
                     <p className="text-sm font-semibold text-foreground mb-1">Select a stock to trade</p>
                     <p className="text-xs">Search for any NGX-listed instrument on the left to begin order entry.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Right: order book */}
+            <div>
+              {selectedInstrument ? (
+                <OrderBookWidget
+                  symbol={selectedInstrument.symbol}
+                  onPriceClick={handlePriceClick}
+                />
+              ) : (
+                <div className="flex h-full min-h-[360px] flex-col items-center justify-center gap-4 rounded-2xl border border-border/40 bg-[#0b0e11]/60 p-8 text-center text-muted-foreground">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0ecb81]/8 border border-[#0ecb81]/10">
+                    <BookOpen className="w-6 h-6 text-[#0ecb81]/50" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-foreground/60 mb-1">Order book</p>
+                    <p className="text-xs text-muted-foreground/60">Select a stock to see live depth.</p>
                   </div>
                 </div>
               )}

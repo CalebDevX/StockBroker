@@ -252,6 +252,24 @@ export interface MarketSummary {
   totalVolume: number
 }
 
+export interface OrderBookLevel {
+  priceKobo: number
+  priceNaira: number
+  quantity: number
+  total: number
+}
+
+export interface OrderBook {
+  symbol: string
+  bids: OrderBookLevel[]
+  asks: OrderBookLevel[]
+  spreadKobo: number
+  spreadNaira: number
+  spreadPct: number
+  midKobo: number
+  midNaira: number
+}
+
 export const marketApi = {
   // search requires q >= 2 chars, else returns []
   search: (q: string) =>
@@ -263,6 +281,8 @@ export const marketApi = {
   quote: (symbol: string) =>
     apiFetch<InstrumentQuote>(`/market/quote/${symbol}`),
   summary: () => apiFetch<MarketSummary>('/market/summary'),
+  orderbook: (symbol: string) =>
+    apiFetch<OrderBook>(`/market/orderbook/${symbol}`),
 }
 
 // ─── Funds ────────────────────────────────────────────────────────────
