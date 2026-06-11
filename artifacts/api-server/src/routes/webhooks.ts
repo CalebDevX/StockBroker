@@ -2,6 +2,22 @@ import { Router, type Request, type Response } from "express";
 import { AchekWebhookHelper } from "achek";
 import { handleIncomingMessage } from "../services/whatsapp-bot.js";
 import { logger } from "../lib/logger.js";
+import { db } from "@workspace/db";
+import { settingsTable } from "@workspace/db/schema";
+import { eq } from "drizzle-orm";
+
+async function getDevApiKeys(): Promise<Record<string, string>> {
+  try {
+    const [row] = await db
+      .select({ value: settingsTable.value })
+      .from(settingsTable)
+      .where(eq(settingsTable.key, "dev_api_keys"))
+      .limit(1);
+    return (row?.value as Record<string, string>) ?? {};
+  } catch {
+    return {};
+  }
+}
 
 const router = Router();
 
@@ -14,8 +30,9 @@ interface AchekEvent {
 // Receives signed webhook events from Achek (WhatsApp bot incoming messages, handoffs, etc.)
 // Requires express.raw() to be mounted BEFORE express.json() in app.ts so we
 // receive the raw Buffer for HMAC signature verification.
-router.post("/achek", (req: Request, res: Response) => {
-  const webhookSecret = process.env["ACHEK_WEBHOOK_SECRET"];
+router.post("/achek", async (req: Request, res: Response) => {
+  const devKeys = await getDevApiKeys();
+  const webhookSecret = process.env["ACHEK_WEBHOOK_SECRET"] ?? devKeys["achek_webhook_secret"] ?? "";
 
   // ── Signature verification ───────────────────────────────────────────
   if (webhookSecret) {

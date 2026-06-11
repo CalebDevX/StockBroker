@@ -5,9 +5,23 @@ import {
   ordersTable,
   positionsTable,
   instrumentsTable,
+  settingsTable,
 } from "@workspace/db/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
+
+async function getDevApiKeys(): Promise<Record<string, string>> {
+  try {
+    const [row] = await db
+      .select({ value: settingsTable.value })
+      .from(settingsTable)
+      .where(eq(settingsTable.key, "dev_api_keys"))
+      .limit(1);
+    return (row?.value as Record<string, string>) ?? {};
+  } catch {
+    return {};
+  }
+}
 
 // ── Session store ────────────────────────────────────────────────────────────
 // In-memory session keyed by E.164 phone number.
@@ -37,15 +51,17 @@ function touchSession(phone: string, session: BotSession): void {
 
 // ── Achek client ─────────────────────────────────────────────────────────────
 
-function achekClient(): AchekConnect {
-  const apiKey = process.env["ACHEK_API_KEY"];
+async function achekClient(): Promise<AchekConnect> {
+  const devKeys = await getDevApiKeys();
+  const apiKey = process.env["ACHEK_API_KEY"] ?? devKeys["achek_api_key"] ?? "";
   if (!apiKey) throw new Error("ACHEK_API_KEY is not configured");
   return new AchekConnect({ apiKey });
 }
 
 async function sendReply(phone: string, message: string): Promise<void> {
   try {
-    await achekClient().alerts.send({
+    const client = await achekClient();
+    await client.alerts.send({
       phoneNumber: phone,
       message,
       category: "notification",

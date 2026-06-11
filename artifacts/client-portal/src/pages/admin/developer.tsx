@@ -13,6 +13,7 @@ interface DevKeys {
   gemini_api_key?: string
   achek_api_key?: string
   achek_api_url?: string
+  achek_webhook_secret?: string
   twilio_account_sid?: string
   twilio_auth_token?: string
   twilio_from_number?: string
@@ -230,6 +231,25 @@ export default function AdminDeveloper() {
               placeholder="https://api.achek.com.ng"
               hint="Default: https://api.achek.com.ng"
             />
+            <KeyField
+              label="Webhook Secret"
+              field="achek_webhook_secret"
+              value={form.achek_webhook_secret ?? ''}
+              show={show('achek_webhook_secret')}
+              onToggle={() => toggle('achek_webhook_secret')}
+              onChange={set('achek_webhook_secret')}
+              placeholder="achek_wh_secret_..."
+              hint="Shown once in the Achek dashboard under Bot → Webhook. Used to verify incoming message signatures."
+            />
+            <div className="lg:col-span-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase mb-1.5">Webhook URL</p>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-2">
+                Paste this URL into the <strong className="text-foreground">Achek dashboard → AI Bot → Webhook URL</strong> so incoming WhatsApp messages are routed to the bot:
+              </p>
+              <code className="block px-3 py-2 bg-background border border-border rounded-lg text-xs text-primary font-mono break-all select-all">
+                {typeof window !== 'undefined' ? `${window.location.origin}/api/webhooks/achek` : '/api/webhooks/achek'}
+              </code>
+            </div>
           </Section>
 
           <Section
