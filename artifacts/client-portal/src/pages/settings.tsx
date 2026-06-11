@@ -1,12 +1,14 @@
 import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLocation } from 'wouter'
 import {
   User, ShieldCheck, Bell, BadgeCheck,
-  ChevronRight, LogOut, Lock, Key, FileText,
+  ChevronRight, LogOut, Lock, Key, FileText, MessageSquare,
 } from 'lucide-react'
 import DashboardSidebar from '@/components/dashboard-sidebar'
 import { KycStatusBadge } from '@/components/kyc-banner'
+import { notificationsApi, type NotifPrefs } from '@/lib/api'
 
 type Tab = 'Profile' | 'Security' | 'Notifications' | 'KYC'
 const TABS: Tab[] = ['Profile', 'Security', 'Notifications', 'KYC']
@@ -113,42 +115,113 @@ function SecurityTab() {
   )
 }
 
-function NotificationsTab() {
-  const [prefs, setPrefs] = useState({
-    tradeFills:  true,
-    priceAlerts: true,
-    deposits:    true,
-    kycUpdates:  true,
-    marketNews:  false,
-  })
-  const toggle = (k: keyof typeof prefs) =>
-    setPrefs(p => ({ ...p, [k]: !p[k] }))
+function PrefToggle({
+  value, onChange, label, desc,
+}: { value: boolean; onChange: (v: boolean) => void; label: string; desc: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4 p-4">
+      <div>
+        <p className="text-sm font-semibold text-foreground">{label}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
+      </div>
+      <button
+        onClick={() => onChange(!value)}
+        aria-label={`Toggle ${label}`}
+        className={`relative w-10 h-[22px] rounded-full transition-colors shrink-0 ${value ? 'bg-[#0ecb81]' : 'bg-muted/60'}`}
+      >
+        <span className={`absolute top-[2px] left-[2px] w-[18px] h-[18px] rounded-full bg-white shadow transition-transform ${value ? 'translate-x-[18px]' : ''}`} />
+      </button>
+    </div>
+  )
+}
 
-  const items: { key: keyof typeof prefs; label: string; desc: string }[] = [
-    { key: 'tradeFills',  label: 'Trade fills',          desc: 'When a buy or sell order is executed' },
-    { key: 'priceAlerts', label: 'Price alerts',          desc: 'Significant moves in your holdings'  },
-    { key: 'deposits',    label: 'Deposits & withdrawals',desc: 'Fund activity on your account'       },
-    { key: 'kycUpdates',  label: 'KYC status',            desc: 'Verification updates from compliance'},
-    { key: 'marketNews',  label: 'Market news',           desc: 'NGX announcements & corporate actions'},
+function NotificationsTab() {
+  const qc = useQueryClient()
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['notif-prefs'],
+    queryFn:  () => notificationsApi.getPrefs(),
+  })
+
+  const saveMut = useMutation({
+    mutationFn: (patch: Partial<NotifPrefs>) => notificationsApi.updatePrefs(patch),
+    onMutate: async (patch) => {
+      await qc.cancelQueries({ queryKey: ['notif-prefs'] })
+      const prev = qc.getQueryData<{ prefs: NotifPrefs }>(['notif-prefs'])
+      if (prev) {
+        qc.setQueryData(['notif-prefs'], { prefs: { ...prev.prefs, ...patch } })
+      }
+      return { prev }
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['notif-prefs'], ctx.prev)
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['notif-prefs'] }),
+  })
+
+  const prefs = data?.prefs
+  const set = (key: keyof NotifPrefs) => (val: boolean) => saveMut.mutate({ [key]: val })
+
+  if (isLoading || !prefs) {
+    return (
+      <div className="rounded-xl border border-border bg-card divide-y divide-border animate-pulse">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex items-center justify-between p-4 gap-4">
+            <div className="space-y-1.5 flex-1">
+              <div className="h-3.5 w-32 bg-muted/40 rounded" />
+              <div className="h-2.5 w-48 bg-muted/25 rounded" />
+            </div>
+            <div className="w-10 h-[22px] bg-muted/30 rounded-full shrink-0" />
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  const appItems: { key: keyof NotifPrefs; label: string; desc: string }[] = [
+    { key: 'app_trade_fills',  label: 'Trade fills',           desc: 'When a buy or sell order is executed' },
+    { key: 'app_price_alerts', label: 'Price alerts',           desc: 'Significant moves in your holdings'  },
+    { key: 'app_deposits',     label: 'Deposits & withdrawals', desc: 'Fund activity on your account'       },
+    { key: 'app_kyc_updates',  label: 'KYC status',             desc: 'Verification updates from compliance'},
+    { key: 'app_market_news',  label: 'Market news',            desc: 'NGX announcements & corporate actions'},
+  ]
+
+  const waItems: { key: keyof NotifPrefs; label: string; desc: string }[] = [
+    { key: 'wa_order_filled',   label: 'Order fills',         desc: 'Get a WhatsApp message when your order executes' },
+    { key: 'wa_deposit',        label: 'Deposits',            desc: 'Confirmation when funds are credited'            },
+    { key: 'wa_withdrawal',     label: 'Withdrawals',         desc: 'Confirmation when a withdrawal is submitted'     },
+    { key: 'wa_order_rejected', label: 'Order rejections',    desc: 'Alert if an order is rejected'                   },
   ]
 
   return (
-    <div className="rounded-xl border border-border bg-card divide-y divide-border">
-      {items.map(({ key, label, desc }) => (
-        <div key={key} className="flex items-center justify-between gap-4 p-4">
-          <div>
-            <p className="text-sm font-semibold text-foreground">{label}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
-          </div>
-          <button
-            onClick={() => toggle(key)}
-            aria-label={`Toggle ${label}`}
-            className={`relative w-10 h-[22px] rounded-full transition-colors shrink-0 ${prefs[key] ? 'bg-[#0ecb81]' : 'bg-muted/60'}`}
-          >
-            <span className={`absolute top-[2px] left-[2px] w-[18px] h-[18px] rounded-full bg-white shadow transition-transform ${prefs[key] ? 'translate-x-[18px]' : ''}`} />
-          </button>
+    <div className="space-y-4">
+      <div className="rounded-xl border border-border bg-card divide-y divide-border">
+        <div className="px-4 py-3 border-b border-border/60">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">In-app notifications</p>
         </div>
-      ))}
+        {appItems.map(({ key, label, desc }) => (
+          <PrefToggle key={key} value={prefs[key]} onChange={set(key)} label={label} desc={desc} />
+        ))}
+      </div>
+
+      <div className="rounded-xl border border-[#25d366]/20 bg-card divide-y divide-border overflow-hidden">
+        <div className="flex items-center gap-2 px-4 py-3 bg-[#25d366]/5">
+          <MessageSquare className="w-3.5 h-3.5 text-[#25d366]" />
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#25d366]">WhatsApp alerts</p>
+        </div>
+        {waItems.map(({ key, label, desc }) => (
+          <PrefToggle key={key} value={prefs[key]} onChange={set(key)} label={label} desc={desc} />
+        ))}
+        <div className="px-4 py-3">
+          <p className="text-[11px] text-muted-foreground/60 leading-relaxed">
+            Sent to the phone number on your account via WhatsApp. Requires Achek to be configured by your broker.
+          </p>
+        </div>
+      </div>
+
+      {saveMut.isError && (
+        <p className="text-xs text-[#f6465d] text-center">Failed to save — please try again.</p>
+      )}
     </div>
   )
 }

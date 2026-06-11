@@ -6,6 +6,7 @@ import { validateBody } from "../middlewares/validate.js";
 import { db } from "@workspace/db";
 import { clientsTable, transactionsTable, auditLogTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
+import { alertDeposit, alertWithdrawal } from "../services/whatsapp-alerts.js";
 
 const router = Router();
 
@@ -62,6 +63,15 @@ router.post("/deposit", validateBody(depositSchema), async (req, res) => {
       action:    "funds.deposit",
       details:   { amountKobo, balanceAfterKobo, reference },
       ipAddress: req.ip,
+    });
+
+    // WhatsApp alert (fire-and-forget)
+    void alertDeposit({
+      clientId:         req.auth.sub,
+      amountKobo,
+      balanceAfterKobo,
+      bankName:         body.bankName,
+      reference,
     });
 
     res.status(201).json({
@@ -126,6 +136,15 @@ router.post("/withdraw", validateBody(withdrawSchema), async (req, res) => {
       action:    "funds.withdrawal_request",
       details:   { amountKobo, balanceAfterKobo, reference },
       ipAddress: req.ip,
+    });
+
+    // WhatsApp alert (fire-and-forget)
+    void alertWithdrawal({
+      clientId:         req.auth.sub,
+      amountKobo,
+      balanceAfterKobo,
+      bankName:         body.bankName,
+      reference,
     });
 
     res.status(201).json({

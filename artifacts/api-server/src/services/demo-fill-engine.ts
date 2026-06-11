@@ -15,6 +15,7 @@ import { eq, and } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 import { getWsServer } from "../websocket.js";
 import { createNotification } from "./notifications-service.js";
+import { alertOrderFilled } from "./whatsapp-alerts.js";
 
 // Simulate realistic execution delay
 function fillDelayMs(orderType: "market" | "limit"): number {
@@ -83,13 +84,23 @@ async function executeDemoFill(params: {
 
     logger.info({ clOrdId: params.clOrdId, fillPriceKobo, qty: params.quantity }, "order filled (simulated)");
 
-    // Notify the client
+    // Notify the client (in-app)
     const priceStr = `₦${(fillPriceKobo / 100).toFixed(2)}`;
     await createNotification({
       clientId: params.clientId,
       type:     "order_filled",
       title:    `Order filled: ${params.side === "buy" ? "Bought" : "Sold"} ${params.symbol}`,
       message:  `${params.quantity} unit${params.quantity > 1 ? "s" : ""} of ${params.symbol} ${params.side === "buy" ? "bought" : "sold"} @ ${priceStr}. Order ref: ${params.clOrdId.slice(0, 12).toUpperCase()}.`,
+    });
+
+    // WhatsApp alert (fire-and-forget, non-fatal)
+    void alertOrderFilled({
+      clientId:      params.clientId,
+      symbol:        params.symbol,
+      side:          params.side,
+      quantity:      params.quantity,
+      fillPriceKobo,
+      clOrdId:       params.clOrdId,
     });
 
     // Broadcast execution event via WebSocket

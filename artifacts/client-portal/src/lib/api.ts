@@ -283,6 +283,16 @@ export const marketApi = {
   summary: () => apiFetch<MarketSummary>('/market/summary'),
   orderbook: (symbol: string) =>
     apiFetch<OrderBook>(`/market/orderbook/${symbol}`),
+  trades: (symbol: string) =>
+    apiFetch<{ symbol: string; trades: TradeTick[] }>(`/market/trades/${symbol}`),
+}
+
+export interface TradeTick {
+  priceKobo:  number
+  priceNaira: number
+  quantity:   number
+  side:       'buy' | 'sell'
+  timestamp:  string
 }
 
 // ─── Funds ────────────────────────────────────────────────────────────
@@ -307,12 +317,30 @@ export interface AppNotification {
   title: string; message: string; isRead: boolean; createdAt: string
 }
 
+export interface NotifPrefs {
+  app_trade_fills:   boolean
+  app_price_alerts:  boolean
+  app_deposits:      boolean
+  app_kyc_updates:   boolean
+  app_market_news:   boolean
+  wa_order_filled:   boolean
+  wa_deposit:        boolean
+  wa_withdrawal:     boolean
+  wa_order_rejected: boolean
+}
+
 export const notificationsApi = {
   list: () => apiFetch<{ notifications: AppNotification[]; unreadCount: number }>('/notifications'),
   markRead: (id: string) =>
     apiFetch<{ ok: boolean }>(`/notifications/${id}/read`, { method: 'PATCH' }),
   markAllRead: () =>
     apiFetch<{ ok: boolean }>('/notifications/read-all', { method: 'PATCH' }),
+  getPrefs: () =>
+    apiFetch<{ prefs: NotifPrefs }>('/notifications/prefs'),
+  updatePrefs: (prefs: Partial<NotifPrefs>) =>
+    apiFetch<{ prefs: NotifPrefs }>('/notifications/prefs', {
+      method: 'PATCH', body: JSON.stringify({ prefs }),
+    }),
 }
 
 // ─── Reports ──────────────────────────────────────────────────────────

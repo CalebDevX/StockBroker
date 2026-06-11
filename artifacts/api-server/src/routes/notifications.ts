@@ -1,8 +1,11 @@
 import { Router } from "express";
+import { z } from "zod";
 import { requireAuth } from "../middlewares/auth.js";
+import { validateBody } from "../middlewares/validate.js";
 import { db } from "@workspace/db";
 import { notificationsTable } from "@workspace/db/schema";
 import { eq, and, desc } from "drizzle-orm";
+import { getClientNotifPrefs, setClientNotifPrefs } from "../services/whatsapp-alerts.js";
 
 const router = Router();
 
@@ -50,6 +53,31 @@ router.patch("/:id/read", async (req, res) => {
         ),
       );
     res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// GET /api/notifications/prefs
+router.get("/prefs", async (req, res) => {
+  try {
+    const prefs = await getClientNotifPrefs(req.auth.sub);
+    res.json({ prefs });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+const prefsSchema = z.object({
+  prefs: z.record(z.boolean()),
+});
+
+// PATCH /api/notifications/prefs
+router.patch("/prefs", validateBody(prefsSchema), async (req, res) => {
+  try {
+    const { prefs } = req.body as { prefs: Record<string, boolean> };
+    const updated = await setClientNotifPrefs(req.auth.sub, prefs);
+    res.json({ prefs: updated });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }

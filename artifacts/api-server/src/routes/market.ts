@@ -261,4 +261,77 @@ router.get("/orderbook/:symbol", async (req, res) => {
   }
 });
 
+// GET /api/market/trades/:symbol
+// Returns the last 20 simulated time-and-sales fills.
+// Uses a seeded LCG that refreshes every 2 seconds so the tape evolves naturally.
+router.get("/trades/:symbol", async (req, res) => {
+  try {
+    const symbol = (req.params["symbol"] ?? "").toUpperCase();
+    const [instrument] = await db
+      .select({ lastPriceKobo: instrumentsTable.lastPriceKobo, volume: instrumentsTable.volume })
+      .from(instrumentsTable)
+      .where(eq(instrumentsTable.symbol, symbol))
+      .limit(1);
+
+    if (!instrument) {
+      res.status(404).json({ error: `Symbol ${symbol} not found` });
+      return;
+    }
+
+    const midKobo = instrument.lastPriceKobo;
+    if (midKobo <= 0) {
+      res.json({ symbol, trades: [] });
+      return;
+    }
+
+    const symHash = symbol.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    const window  = Math.floor(Date.now() / 2_000);
+    const seed    = symHash + window;
+
+    function lcg(s: number): () => number {
+      let state = s;
+      return () => {
+        state = (1_664_525 * state + 1_013_904_223) & 0x7fff_ffff;
+        return state / 0x7fff_ffff;
+      };
+    }
+    const rng = lcg(seed);
+
+    const COUNT    = 20;
+    const baseLot  = Math.min(Math.max(Math.round((instrument.volume ?? 100_000) / 2_000), 500), 50_000);
+    const now      = Date.now();
+
+    const trades: Array<{
+      priceKobo:  number;
+      priceNaira: number;
+      quantity:   number;
+      side:       "buy" | "sell";
+      timestamp:  string;
+    }> = [];
+
+    let msAgo = 0;
+    for (let i = 0; i < COUNT; i++) {
+      // Each trade is between 2 – 25 seconds apart going backwards
+      msAgo += Math.round(2_000 + rng() * 23_000);
+
+      const jitter   = 1 + (rng() * 0.006 - 0.003); // ±0.3%
+      const priceKobo = Math.round(midKobo * jitter);
+      const quantity   = Math.round(baseLot * (0.2 + rng() * 2.4));
+      const side: "buy" | "sell" = rng() > 0.48 ? "buy" : "sell";
+
+      trades.push({
+        priceKobo,
+        priceNaira: priceKobo / 100,
+        quantity,
+        side,
+        timestamp: new Date(now - msAgo).toISOString(),
+      });
+    }
+
+    res.json({ symbol, trades });
+  } catch (err: unknown) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
 export default router;

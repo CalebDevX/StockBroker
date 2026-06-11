@@ -5,6 +5,7 @@ import MarketTicker from '@/components/market-ticker'
 import InstrumentSearch, { type SelectedInstrument } from '@/components/instrument-search'
 import OrderForm from '@/components/order-form'
 import OrderBookWidget from '@/components/order-book'
+import TradesTape from '@/components/trades-tape'
 import { useQuery } from '@tanstack/react-query'
 import { marketApi, type InstrumentQuote } from '@/lib/api'
 import { KycStatusBadge } from '@/components/kyc-banner'
@@ -170,12 +171,15 @@ export default function TradePage() {
               </div>
             )}
             {mobileTab === 'book' && (
-              <div className="pb-4">
+              <div className="pb-4 space-y-3">
                 {selectedInstrument ? (
-                  <OrderBookWidget
-                    symbol={selectedInstrument.symbol}
-                    onPriceClick={handlePriceClick}
-                  />
+                  <>
+                    <OrderBookWidget
+                      symbol={selectedInstrument.symbol}
+                      onPriceClick={handlePriceClick}
+                    />
+                    <TradesTape symbol={selectedInstrument.symbol} />
+                  </>
                 ) : (
                   <div className="flex h-full min-h-[260px] flex-col items-center justify-center gap-4 rounded-[1.5rem] border border-border bg-[#0b0e11]/80 p-8 text-center text-muted-foreground">
                     <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-[#0ecb81]/10 border border-[#0ecb81]/15">
@@ -222,13 +226,16 @@ export default function TradePage() {
               )}
             </div>
 
-            {/* Right: order book */}
-            <div>
+            {/* Right: order book + time & sales */}
+            <div className="flex flex-col gap-4">
               {selectedInstrument ? (
-                <OrderBookWidget
-                  symbol={selectedInstrument.symbol}
-                  onPriceClick={handlePriceClick}
-                />
+                <>
+                  <OrderBookWidget
+                    symbol={selectedInstrument.symbol}
+                    onPriceClick={handlePriceClick}
+                  />
+                  <TradesTape symbol={selectedInstrument.symbol} />
+                </>
               ) : (
                 <div className="flex h-full min-h-[360px] flex-col items-center justify-center gap-4 rounded-2xl border border-border/40 bg-[#0b0e11]/60 p-8 text-center text-muted-foreground">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0ecb81]/8 border border-[#0ecb81]/10">
