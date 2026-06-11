@@ -1,11 +1,11 @@
 import { Link, useLocation } from 'wouter'
-import { Home, TrendingUp, Briefcase, Bell, User } from 'lucide-react'
+import { Home, TrendingUp, Briefcase, Wallet, User } from 'lucide-react'
 
 const ITEMS = [
   { label: 'Home',      icon: Home,       href: '/dashboard'     },
   { label: 'Portfolio', icon: Briefcase,  href: '/portfolio'     },
   { label: 'Trade',     icon: TrendingUp, href: '/trade', primary: true },
-  { label: 'Alerts',   icon: Bell,       href: '/notifications' },
+  { label: 'Funds',    icon: Wallet,     href: '/funds'         },
   { label: 'Account',  icon: User,       href: '/settings'      },
 ]
 
